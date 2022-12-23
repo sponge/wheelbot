@@ -6,11 +6,43 @@ import { wheelMachine, WheelContext } from './fsm.js'
 
 function printScores(context: WheelContext) {
   let i = 0;
+  let str = '';
+
   for (let player of context.players) {
     const c = i == 0 ? chalk.white.bgRed : i == 1 ? chalk.white.bgYellow : chalk.white.bgBlue;
-    console.log(c(`${player.name}: \$${player.score}`))
+    str += c(`${player.name}: \$${player.score}`)
+    str += ' ';
     i++;
   }
+
+  console.log(str);
+}
+
+function printBoard(context: WheelContext) {
+  const letters = 'abcdefghijklmnopqrstuvwxyz';
+  const fullwidth = 'ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ';
+  let board = '';
+  for (let letter of context.puzzle) {
+    if (letter == ' ') board += '🟩';
+    else if (letters.includes(letter) == false) board += letter; // ampersands?
+    else if (context.guessedLetters.includes(letter)) board += fullwidth[letters.indexOf(letter)];
+    else board += '⬜';
+  }
+
+  console.log(context.category.toUpperCase());
+  console.log(board);
+}
+
+function printUsedLetters(context: WheelContext) {
+  function inner(letter: string) {
+    return (context.guessedLetters.includes(letter) ? chalk.gray : chalk.whiteBright)(letter);
+  }
+
+  let avail = '';
+  avail += 'abcdefghijklm'.split('').map(inner).join(' ');
+  avail += '\n';
+  avail += 'nopqrstuvwxyz'.split('').map(inner).join(' ');
+  console.log(avail);
 }
 
 if (wheelMachine.options.delays) {
@@ -48,17 +80,25 @@ wheelService.subscribe(async (state) => {
 
   const { currentPlayer } = state.context;
 
+  console.log();
   printScores(state.context);
+  console.log();
+  printBoard(state.context);
+  console.log();
+  printUsedLetters(state.context);
+  console.log();
 
   const { action } = await inquirer.prompt({
     type: 'list',
     name: 'action',
     message: `${currentPlayer?.name}, it's your turn:`,
-    choices: [
-      { name: 'Spin the wheel', value: 'SPIN_WHEEL' },
-      { name: 'Buy a vowel', value: 'BUY_VOWEL' },
-      { name: 'Solve the puzzle', value: 'SOLVE_PUZZLE' },
-    ],
+    choices: () => {
+      const choices = [];
+      choices.push({ name: 'Spin the wheel', value: 'SPIN_WHEEL' });
+      if (currentPlayer.score >= 250) choices.push({ name: 'Buy a vowel', value: 'BUY_VOWEL' });
+      choices.push({ name: 'Solve the puzzle', value: 'SOLVE_PUZZLE' });
+      return choices;
+    },
   });
 
   if (action != 'SOLVE_PUZZLE') {
@@ -71,4 +111,47 @@ wheelService.subscribe(async (state) => {
     });
     wheelService.send(action, ans);
   }
+});
+
+wheelService.subscribe(async (state) => {
+  if (!state.matches('guessConsonent')) return;
+
+  const { currentPlayer, guessedLetters } = state.context;
+
+  console.log(`You spun $${state.context.spinAmount}`);
+
+  const { letter } = await inquirer.prompt({
+    type: 'input',
+    name: 'letter',
+    message: `${currentPlayer?.name}, choose a consonent:`,
+    validate: input => {
+      if (input.length != 1) return 'Only one letter at a time!';
+      if (guessedLetters.includes(input)) return 'Already guessed letter!';
+      if (['a', 'e', 'i', 'o', 'u'].includes(input)) return "Can't choose a vowel!";
+      return true;
+    }
+  });
+
+  wheelService.send('GUESS_LETTER', { letter });
+});
+
+wheelService.subscribe(async (state) => {
+  if (!state.matches('guessVowel')) return;
+
+  const { currentPlayer, guessedLetters } = state.context;
+
+  const { letter } = await inquirer.prompt({
+    type: 'input',
+    name: 'letter',
+    message: `${currentPlayer?.name}, choose a vowel:`,
+    validate: input => {
+      if (input.length != 1) return 'Only one letter at a time!';
+      if (guessedLetters.includes(input)) return 'Already guessed letter!';
+      if (['a', 'e', 'i', 'o', 'u'].includes(input) == false) return "Can't choose a consonant!";
+
+      return true;
+    }
+  });
+
+  wheelService.send('GUESS_LETTER', { letter });
 });
