@@ -1,4 +1,19 @@
+import { StringSelectMenuBuilder } from '@discordjs/builders';
 import { createMachine } from 'xstate';
+
+interface Player {
+  name: string,
+  score: number
+}
+
+interface WheelContext {
+  players: Player[],
+  currentPlayerNum: number,
+  currentPlayer: Player,
+  category: string,
+  puzzle: string,
+  guessedLetters: string[],
+}
 
 const waiting = {
   always: [
@@ -11,9 +26,10 @@ const waiting = {
 }
 
 const newPuzzle = {
-  entry: (context: any, event: any) => {
+  entry: (context: WheelContext, event: any) => {
     context.currentPlayerNum = 0;
     context.currentPlayer = context.players[0];
+    context.category = "Famous Placeholder Messages";
     context.puzzle = "hello world";
   },
 
@@ -53,8 +69,9 @@ const nextPlayerTurn = {
 };
 
 const puzzleGuessWrong = {
+  entry: 'cycleNextPlayer',
   after: {
-    1000: 'newPuzzle'
+    1000: 'playerTurn'
   }
 };
 
@@ -90,19 +107,6 @@ const guessVowel = {
   }
 };
 
-interface Player {
-  name: string,
-  score: number
-}
-
-interface WheelContext {
-  players: Player[],
-  currentPlayerNum: number,
-  currentPlayer: Player | null,
-  puzzle: string,
-  guessedLetters: string[],
-}
-
 const wheelMachine =
 /** @xstate-layout N4IgpgJg5mDOIC5QHcAWYwBsB0yCGAlgC4EB2UAxAHICiA6gPoAKAMgIICaNASgNoAMAXUSgADgHtYxAuNIiQAD0QBGAEzKArNg0B2fgBYdqgGzHNAZgCc5gDQgAnolXnz2Z-uOXV3-fwAclsYAvkF2aBg4+NLkFADKACps3PEMAOJsALI0AsJIIBJSJLLySgjKVjpuGvzKppZ+esp2jgiqXtjmGvr6lvoaxn3m-LohYehYuIQkMTnyBdLFeaXllpWq1bWeDTXNiOb6qth+XR465jrGF5ejIOETpGDITACuAF6vmGAUCrBEeERgbB4ABmAIATgAKZT8GEASgodxwDyebw+YFmeXmRTkSxUGg0fg6akuXksyj85j8fl2CF62FWxhOqjOx0sGnMN0R2FEmDw9jAYPizzBpDiTAAklQGHQABI0GgsDFiSQLHGgUp9ZTadzGfyXY7mTQ08zqen8Mxk-gXDTKTnjHA8vkCoUiigAIQAqhwGAA1ADydAVSvyKuxJT2Bg6lnNXUpbIG6xp+nJHQ0Xj8Bmq63x+jtEW5vP5guFotifpYPpozA9AC0ayxskI5qGZGrFIhrdhjOthuZTDpahSaRnKoE-N2hvwyYFbaFbvaC07i66yxWq0xa-XsspcsrCq3wwhO93quz+4PbA5EOPjNgPOPqhmyXG8xNHUWXaKfn8AUDQQKIVYTgeAYcUABEGwYeJxSyeEuXfZ0S2DLED1xI9GS7Hsz0uC8k28bAYVJVQ-HURlrFfJEwAUIgmELRDXW-f5ARBcEoRhfg4IXB5qNopdP2QltFnVFR+CGKpCMNM442pK8EHOfRtCnFxrGUU4dEsCjsCgZ44FgABhWRYFkMBSCIChUg9GhYliBgG3ieIeAE-chPbVpum0TQBn4bMGj6GlvC0QZoWUPRmQGDxNO03SDNIIyHlM8zLOs2yaHsxyd2bZy21KVR3JtfpfB8nQ-NkvwtWqdjKX2FwrWCOcuSi2B9MM4yEsY38WIAoCuG4UCIKraDYIRBdGua2LWqIJzVUPXKFPyryipKloQtHdklNUfxapcSKdKan1xGQLBEqsmy7Icvgm0xQTsqcPLPMK-FfI0JNjEJVl1hNbsehCjl6pG3bYH2w7MGO5KzvS3cQyyma7oK7zHuK57ZLTQ4THxfoqWUNlLA0v781GoGjva5j-0hbqQPAyDBpoTj8YBwnMCmsM0Nmjy4cWpGWlewkB3HDxsz0LpNLBcRnlICA-QANwFb5fiYv9WOhOFhvzEWxYl6WwSZ1DhLKCpxM2epGmHKc71e3QLmK5Rah0TTRFRT5UgBugRZiYmFYApWOJVt8HbAJ3dJd2QoG1lzln1ntDe2JpSsuelXt1LpiuGQIQjnUhxAgOB5ERTLprQgBaYwaSLzSommKA8+Z3W1A0Q51L0XxanNXpVGNfYuwaHQyrTbvOhCzTkRed5PirnXXMHSxsB0XQvGtV6hmL2STX4bBoW6KxVPWQJ+jtujlzbFCw8QC0uwHaNzisfx+iTWoCKnYjDU8USscHqiaP3z8x+PsoQq1Twuj5XKOpTmexrBrwaE+CoOhu47Wii1eKRBv43QQAcduWgXDMl0DaTo1gKRwL2gdLAyDDzdw6MRTQ19nCiQHDSS4WhBzhRnr0K0wtRbiylgKEhaE1B30wc4fY1Q2QyRaBmQk94MbeVUgEX6Yx8z2xHv7Z2rtK5XWhjw8kCkXC6mTMYIYFIXDDlMPHB8m1ny4xCEAA */
 createMachine(
@@ -122,7 +126,8 @@ createMachine(
       context: {
         players: [],
         currentPlayerNum: 0,
-        currentPlayer: null,
+        currentPlayer: {name: '', score: 0},
+        category: '',
         puzzle: '',
         guessedLetters: [],
       },
@@ -140,53 +145,51 @@ createMachine(
     },
     {
       guards: {
-        isGameFull: (context, event) => {
+        isGameFull: (context: WheelContext, event): boolean => {
           return context.players.length == 3;
         },
 
-        hasAnyPlayers: (context, event) => {
+        hasAnyPlayers: (context: WheelContext, event): boolean => {
           return context.players.length > 0;
         },
 
-        letterInPuzzle: (context, event: any): boolean => {
-          return !!context.puzzle?.includes(event.letter);
+        letterInPuzzle: (context: WheelContext, event: any): boolean => {
+          return !!context.puzzle.includes(event.letter);
         },
 
-        letterNotInPuzzle: (context, event: any): boolean => {
-          return !context.puzzle?.includes(event.letter);
+        letterNotInPuzzle: (context: WheelContext, event: any): boolean => {
+          return !context.puzzle.includes(event.letter);
         },
 
-        playerCanBuyVowel: (context, event: any): boolean => {
-          return event.currentPlayer?.score >= 250;
+        playerCanBuyVowel: (context: WheelContext, event: any): boolean => {
+          return context.currentPlayer.score >= 250;
         },
 
-        isPuzzleGuessCorrect: (context, event: any): boolean => {
+        isPuzzleGuessCorrect: (context: WheelContext, event: any): boolean => {
           return event.guess.toLowerCase() == context.puzzle.toLowerCase();
         },
 
-        isPuzzleGuessWrong: (context, event: any): boolean => {
+        isPuzzleGuessWrong: (context: WheelContext, event: any): boolean => {
           return event.guess.toLowerCase() != context.puzzle.toLowerCase();
         },
       },
 
       actions: {
-        registerNewPlayer: (context, event: any) => {
+        registerNewPlayer: (context: WheelContext, event: any) => {
           context.players.push({ name: event.playerName, score: 0 });
         },
 
-        cycleNextPlayer: (context, event: any) => {
+        cycleNextPlayer: (context: WheelContext, event: any) => {
           context.currentPlayerNum += 1;
           if (context.currentPlayerNum >= context.players.length) context.currentPlayerNum = 0;
           context.currentPlayer = context.players[context.currentPlayerNum];
         },
 
-        buyVowel: (context, event: any) => {
-          if (event.currentPlayer) {
+        buyVowel: (context: WheelContext, event: any) => {
             event.currentPlayer.score -= 250;
-          }
         },
 
-        updatePuzzle: (context, event: any) => {
+        updatePuzzle: (context: WheelContext, event: any) => {
           console.log(`letter is: ${event.letter}`);
           context.guessedLetters.push(event.letter);
         }
