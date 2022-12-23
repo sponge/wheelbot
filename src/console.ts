@@ -46,14 +46,14 @@ for (let i = 0; i < numPlayers; i++) {
 wheelService.subscribe(async (state) => {
   if (!state.matches('playerTurn')) return;
 
-  const currentPlayer = state.context.players[state.context.currentPlayer];
+  const { currentPlayer } = state.context;
 
   printScores(state.context);
 
   const { action } = await inquirer.prompt({
     type: 'list',
     name: 'action',
-    message: `${currentPlayer.name}, it's your turn:`,
+    message: `${currentPlayer?.name}, it's your turn:`,
     choices: [
       { name: 'Spin the wheel', value: 'SPIN_WHEEL' },
       { name: 'Buy a vowel', value: 'BUY_VOWEL' },

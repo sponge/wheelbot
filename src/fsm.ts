@@ -12,7 +12,8 @@ const waiting = {
 
 const newPuzzle = {
   entry: (context: any, event: any) => {
-    context.currentPlayer = 0;
+    context.currentPlayerNum = 0;
+    context.currentPlayer = context.players[0];
     context.puzzle = "hello world";
   },
 
@@ -34,8 +35,8 @@ const playerTurn = {
     },
 
     SOLVE_PUZZLE: [
-      { cond: 'puzzleGuessCorrect', target: 'roundOver' },
-      { cond: 'puzzleGuessWrong', target: 'nextPlayerTurn' },
+      { cond: 'isPuzzleGuessCorrect', target: 'roundOver' },
+      { cond: 'isPuzzleGuessWrong', target: 'puzzleGuessWrong' },
     ]
   },
 
@@ -51,6 +52,12 @@ const nextPlayerTurn = {
   }
 };
 
+const puzzleGuessWrong = {
+  after: {
+    1000: 'newPuzzle'
+  }
+};
+
 const roundOver = {
   after: {
     1000: 'newPuzzle'
@@ -61,7 +68,7 @@ const guessConsonent = {
   on: {
     GUESS_LETTER: [
       { target: 'playerTurn', actions: ['updatePuzzle'], cond: 'letterInPuzzle' },
-      { target: 'nextPlayerTurn', cond: 'letterNotInPuzzle' },
+      { target: 'nextPlayerTurn', actions: ['updatePuzzle'], cond: 'letterNotInPuzzle' },
     ]
   },
 
@@ -73,8 +80,8 @@ const guessConsonent = {
 const guessVowel = {
   on: {
     GUESS_LETTER: [
-      { target: 'playerTurn', actions: ['adjustCash', 'updatePuzzle'], cond: 'letterInPuzzle' },
-      { target: 'nextPlayerTurn', actions: ['adjustCash'], cond: 'letterNotInPuzzle' },
+      { target: 'playerTurn', actions: ['buyVowel', 'updatePuzzle'], cond: 'letterInPuzzle' },
+      { target: 'nextPlayerTurn', actions: ['buyVowel'], cond: 'letterNotInPuzzle' },
     ]
   },
 
@@ -83,16 +90,22 @@ const guessVowel = {
   }
 };
 
+interface Player {
+  name: string,
+  score: number
+}
+
 interface WheelContext {
-    players: { name: string, score: number }[],
-    currentPlayer: number,
-    puzzle: string,
+  players: Player[],
+  currentPlayerNum: number,
+  currentPlayer: Player | null,
+  puzzle: string,
+  guessedLetters: string[],
 }
 
 const wheelMachine =
-
-  /** @xstate-layout N4IgpgJg5mDOIC5QHcAWYwBsB0yCGAlgC4EB2UAxAHICiA6gPoAKAMgIICaNASgNoAMAXUSgADgHtYxAuNIiQAD0QA2ACyrsygOwBGAByrlATj1GjAJj0BmADQgAnoj07sAVn4f+rncfOqd-KoAvkF2aBg4+NLkFADKACps3PEMAOJsALI0AsJIIBJSJLLySgh6rsrYVt6u5kZWfg1WenaOCDqq-Jo6RlrWVkauqkb85lYhYehYuIQkMTnyBdLFeaXlldU6tfWNYy0OiD0uOj16-MrlVqp9RsoTIOHTpGDITACuAF4fmGAUCrBEPBEMDYPAAM2BACcABQBDwASgojxwz1en2+YAWeSWRTkq0OJw0zXMWgsWn4WnM5lcrUQYy02BOJlGVkpYw8enuyOwokweHsYEh8TekNIcSYAEkqAw6AAJGg0FhYsSSZZ40ClVTONxjAZGYZ1VQNWkIVy1KpUkYU6qdExcqY4Xn8wXC0UUABCAFUOAwAGoAeToiuV+VVuJKiCsVyqI1cenMaj01m8JsT2C0WmU-B0fS0VmMWlc9oiPL5AqFIrFsX9LF9NGYnoAWo2WNkhIswzJ1YonBUqjU6g0jXsTZYNMoehm+hT+GYtMXpk7y66qzW6w3m63eDpcirCl2I2U+5ttkOmvs2hOXKpqb1ma5qs4F46yy7K38AUCQeCodDWJweAYCUABFWwYeIJSyRFuSXN9RRDHED3xI8NgHHZh2aVMJ2wCws34BplCjQx51CB4HWwZ4FCIJhXwrN1-kBYFQQhQVYU8aDyMo6jaJXBDOxWDUCQ6Kp41JEkKSpGkDlNQicNvLRhjzWpSWfbAoDeOBYAAYVkWBZDAUgiAoVJPRoWJYgYVt4niHg+P3ASewQEkNBqCdC1cXoTi0E1VDNbA9ALZNPKpcxVPUzSdNIPTnkM4zTPMyyaGs2ydw7ezu1KZy3C2NyzU8nMfK8KpjGcUwoy8a4wo02BtN0-TYoYr9mN-f8uG4IDQPrCCoKRcjwpqyLooMog7LVQ8stcnM8t0ArpPjcxNHmkZbmsMkqs031xGQLA4rMiyrJsvh22xfiMrpBTsoqKaPJm7zpOMIxsBJDz4wfDNlCLUjuX62BNu2zBdoSg6Ut3UN0vGi7Jvc-K7raPRyUZJa4w8Klxi+vrqt+radsapif1Y1rAJAsDupoDiSx+v6sFG8NkImnLrphk1bkqQihh0QdygCO57lIcQIDgeRkTSsbkIAWmUE0xdcHCzDl+W5cpVSojmKARdpwSEAuFxTAMbNDATJML0OeMcIfDn2ULSwSMmEtUXeL4fnVpDNY5vz42cLxbkMXpYbpfDsHOX2OisHRqgGHnbcXHjK2dhzSmUC50x8EwI98yxU0MbAbxeicrFnZpVK4mjnTo7tEPjw5qRlj2Ag8tQCz9rWBjkvCtTqDozHWga6piog47OhAbxNM5HrDqkFLcowU+7rH-oHw8+gtT3qQ6SxzH4Y2EEGKxA8uW44zOK5ORCIIgA */
-  createMachine(
+/** @xstate-layout N4IgpgJg5mDOIC5QHcAWYwBsB0yCGAlgC4EB2UAxAHICiA6gPoAKAMgIICaNASgNoAMAXUSgADgHtYxAuNIiQAD0QBGAEzKArNg0B2fgBYdqgGzHNAZgCc5gDQgAnolXnz2Z-uOXV3-fwAclsYAvkF2aBg4+NLkFADKACps3PEMAOJsALI0AsJIIBJSJLLySgjKVjpuGvzKppZ+esp2jgiqXtjmGvr6lvoaxn3m-LohYehYuIQkMTnyBdLFeaXllpWq1bWeDTXNiOb6qth+XR465jrGF5ejIOETpGDITACuAF6vmGAUCrBEeERgbB4ABmAIATgAKZT8GEASgodxwDyebw+YFmeXmRTkSxUGg0fg6akuXksyj85j8fl2CF62FWxhOqjOx0sGnMN0R2FEmDw9jAYPizzBpDiTAAklQGHQABI0GgsDFiSQLHGgUp9ZTadzGfyXY7mTQ08zqen8Mxk-gXDTKTnjHA8vkCoUiigAIQAqhwGAA1ADydAVSvyKuxJT2Bg6lnNXUpbIG6xp+nJHQ0Xj8Bmq63x+jtEW5vP5guFotifpYPpozA9AC0ayxskI5qGZGrFIhrdhjOthuZTDpahSaRnKoE-N2hvwyYFbaFbvaC07i66yxWq0xa-XsspcsrCq3wwhO93quz+4PbA5EOPjNgPOPqhmyXG8xNHUWXaKfn8AUDQQKIVYTgeAYcUABEGwYeJxSyeEuXfZ0S2DLED1xI9GS7Hsz0uC8k28bAYVJVQ-HURlrFfJEwAUIgmELRDXW-f5ARBcEoRhfg4IXB5qNopdP2QltFnVFR+CGKpCMNM442pK8EHOfRtCnFxrGUU4dEsCjsCgZ44FgABhWRYFkMBSCIChUg9GhYliBgG3ieIeAE-chPbVpum0TQBn4bMGj6GlvC0QZoWUPRmQGDxNO03SDNIIyHlM8zLOs2yaHsxyd2bZy21KVR3JtfpfB8nQ-NkvwtWqdjKX2FwrWCOcuSi2B9MM4yEsY38WIAoCuG4UCIKraDYIRBdGua2LWqIJzVUPXKFPyryipKloQtHdklNUfxapcSKdKan1xGQLBEqsmy7Icvgm0xQTsqcPLPMK-FfI0JNjEJVl1hNbsehCjl6pG3bYH2w7MGO5KzvS3cQyyma7oK7zHuK57ZLTQ4THxfoqWUNlLA0v781GoGjva5j-0hbqQPAyDBpoTj8YBwnMCmsM0Nmjy4cWpGWlewkB3HDxsz0LpNLBcRnlICA-QANwFb5fiYv9WOhOFhvzEWxYl6WwSZ1DhLKCpxM2epGmHKc71e3QLmK5Rah0TTRFRT5UgBugRZiYmFYApWOJVt8HbAJ3dJd2QoG1lzln1ntDe2JpSsuelXt1LpiuGQIQjnUhxAgOB5ERTLprQgBaYwaSLzSommKA8+Z3W1A0Q51L0XxanNXpVGNfYuwaHQyrTbvOhCzTkRed5PirnXXMHSxsB0XQvGtV6hmL2STX4bBoW6KxVPWQJ+jtujlzbFCw8QC0uwHaNzisfx+iTWoCKnYjDU8USscHqiaP3z8x+PsoQq1Twuj5XKOpTmexrBrwaE+CoOhu47Wii1eKRBv43QQAcduWgXDMl0DaTo1gKRwL2gdLAyDDzdw6MRTQ19nCiQHDSS4WhBzhRnr0K0wtRbiylgKEhaE1B30wc4fY1Q2QyRaBmQk94MbeVUgEX6Yx8z2xHv7Z2rtK5XWhjw8kCkXC6mTMYIYFIXDDlMPHB8m1ny4xCEAA */
+createMachine(
     {
       schema: {
         context: {} as WheelContext,
@@ -108,8 +121,10 @@ const wheelMachine =
       initial: 'waiting',
       context: {
         players: [],
-        currentPlayer: 0,
+        currentPlayerNum: 0,
+        currentPlayer: null,
         puzzle: '',
+        guessedLetters: [],
       },
       states: {
         waiting,
@@ -118,7 +133,8 @@ const wheelMachine =
         nextPlayerTurn,
         guessConsonent,
         guessVowel,
-        roundOver
+        roundOver,
+        puzzleGuessWrong
       },
       predictableActionArguments: true
     },
@@ -141,33 +157,38 @@ const wheelMachine =
         },
 
         playerCanBuyVowel: (context, event: any): boolean => {
-          return true;
+          return event.currentPlayer?.score >= 250;
         },
 
-        puzzleGuessCorrect: (context, event: any): boolean => {
+        isPuzzleGuessCorrect: (context, event: any): boolean => {
           return event.guess.toLowerCase() == context.puzzle.toLowerCase();
         },
 
-        puzzleGuessWrong: (context, event: any): boolean => {
+        isPuzzleGuessWrong: (context, event: any): boolean => {
           return event.guess.toLowerCase() != context.puzzle.toLowerCase();
         },
       },
 
       actions: {
         registerNewPlayer: (context, event: any) => {
-          context.players.push({name: event.playerName, score: 0});
+          context.players.push({ name: event.playerName, score: 0 });
         },
 
         cycleNextPlayer: (context, event: any) => {
-          context.currentPlayer += 1;
-          if (context.currentPlayer >= context.players.length) context.currentPlayer = 0;
+          context.currentPlayerNum += 1;
+          if (context.currentPlayerNum >= context.players.length) context.currentPlayerNum = 0;
+          context.currentPlayer = context.players[context.currentPlayerNum];
         },
 
-        adjustCash: (context, event: any) => {
+        buyVowel: (context, event: any) => {
+          if (event.currentPlayer) {
+            event.currentPlayer.score -= 250;
+          }
         },
 
         updatePuzzle: (context, event: any) => {
           console.log(`letter is: ${event.letter}`);
+          context.guessedLetters.push(event.letter);
         }
       },
 
