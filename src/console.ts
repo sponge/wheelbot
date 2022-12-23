@@ -13,6 +13,10 @@ function printScores(context: WheelContext) {
   }
 }
 
+if (wheelMachine.options.delays) {
+  wheelMachine.options.delays.PLAYER_IDLE_TIME = Math.pow(2, 32) / 2 - 1;
+}
+
 const wheelService = interpret(wheelMachine)
   .onTransition((state: any) => console.log(`New state: ${state.value}`))
   .start();

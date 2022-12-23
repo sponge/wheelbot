@@ -160,7 +160,7 @@ const wheelMachine =
 
         cycleNextPlayer: (context, event: any) => {
           context.currentPlayer += 1;
-          if (context.currentPlayer > context.players.length) context.currentPlayer = 0;
+          if (context.currentPlayer >= context.players.length) context.currentPlayer = 0;
         },
 
         adjustCash: (context, event: any) => {
