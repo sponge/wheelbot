@@ -68,9 +68,7 @@ const newPuzzle = {
     context.guessedLetters = [];
   },
 
-  after: {
-    1000: 'playerTurn'
-  }
+  always: 'playerTurn'
 };
 
 const playerTurn = {
@@ -105,8 +103,8 @@ const spinWheel = {
   entry: 'spinWheel',
   after: {
     1000: [
-      { cond: 'isSpinBankrupt', target: 'bankruptSpin' },
-      { cond: 'isSpinLoseATurn', target: 'loseTurnSpin' },
+      { cond: 'isSpinBankrupt', actions: ['bankruptCurrentPlayer'], target: 'nextPlayerTurn' },
+      { cond: 'isSpinLoseATurn', target: 'nextPlayerTurn' },
       { target: 'guessConsonent' }
     ]
   }
@@ -115,19 +113,6 @@ const spinWheel = {
 const nextPlayerTurn = {
   entry: ['cycleNextPlayer'],
   always: 'playerTurn'
-};
-
-const bankruptSpin = {
-  entry: 'bankruptCurrentPlayer',
-  after: {
-    1000: 'nextPlayerTurn'
-  }
-};
-
-const loseTurnSpin = {
-  after: {
-    1000: 'nextPlayerTurn'
-  }
 };
 
 const puzzleGuessCorrect = {
@@ -143,12 +128,6 @@ const gameOver = {
 const puzzleGuessWrong = {
   after: {
     1000: 'nextPlayerTurn'
-  }
-};
-
-const roundOver = {
-  after: {
-    1000: 'newPuzzle'
   }
 };
 
@@ -193,7 +172,7 @@ const noLettersInPuzzle = {
 };
 
 const wheelMachine =
-  /** @xstate-layout N4IgpgJg5mDOIC5QHcAWYwBsB0yCGAlgC4EB2UAxAHICiA6gPoAKAMgIICaNASgNoAMAXUSgADgHtYxAuNIiQAD0QAmACwB2AKzYAbPwCM6-QA5+Ow8uXqANCACeidauPZVO5Zv6adp-QE5VZQBfINs0DBx8aXIKAGUAFTZueIYAcTYAWRoBYSQQCSkSWXklBGUdTXVsZWN9b34atwBmP1sHBFMqzWNlJr71Y3UdP34-ELD0LFxCEhic+QLpYrzS8srq2vrGnRa2xGNu7H4epsNNcpbNcZBwqdIwZCYAVwAvF8wwCgVYIjwiMGweAAZv8AE4ACn0-GhAEoKLccPdHq93mB5nlFkU5CsVLUXE1VE0Dn4Wqc9Jo9gg3MpsPplH59CYmqMCapVFdQjdJjhRJg8HYwKD4k9QaQ4kwAJJUBh0AASNBoLHRYkkS2xoFK+h8TWwmk0GjUOiG-R0lKhVmwfmUJmU-BaqjqfmM1wR2F5-MFwtFFAAQgBVDgMABqAHk6IrlflVViSog6k0dK5rSSfHb+EZKVZtHV3E1yj16WNOa73QKhSKxbEQywgzRmH6AFoNljZIQLaMydWKFT8dm6bxWYY9NxOyndfTYJrqBl2rS9brO4vct18steyvV2v1pst3j6XIqwqd2NlXvaCruIZOw2j+yII1+SfTwwM6fqAmLiYRFce8ve76-P8gIgoK4KsJwPAMBKAAiLYMPEEpZHCJarp6FaRpix44ggWp5tggyaIyOx+EY9I2HeCDmPw2BDM4hGnE6xh+EWX53GAChEEwqF-mKAF-ACwJgpC0L8Mhy73BxXG-uuGEdssGpxpoCZJv4CamMyGYURULjlM4PR6OoagNC6y6wKIZB0NyXw-PxwFCVCsLwqZ5mkJZESyUe8ndmU3i6qcNRWuyBgaJSOjOPhdKETsxiEiRwRLt+ZkWVZfFAYJoEOaJTmJS5blYHuB5Rp5XarL5Sl0kxaiePoIUUd4ia1B4ljeMYRIOiZOXJRE1mAQJIEQplYmda53K8MohWYV5pWJuVAVVcF5HtAciYElOdJmJUCbqB1UxQE8cCwAAwrIsCyGApBEBQqR+jQsSxAwLbxPEPAeWqJ56omAwVSYhk+PqlKmI+LJODUmhWmD20Jbt+2wEdJ1nRdV03XdD00E9L37u2xUnla1FGKM75gxchgA8pazdISdpGaoO04HtB3HaQp33Ij123fdj3PXw41Y292G4zRUIkU0RM7CTWl+CtkUNFO6bePotPYPTsOM8z52XalfVCeBXDcFBsF1ghSHZdDDPwyzRCvTG-O2oLBMi1aYuLY4Iw0ReybLbmivK7AQbiMgWBI+zqPo3wbYYnJJWIN0Oo5lYqhmGFgOUkF1TuDoegGOoWg1d7MO+-7gdsyjnMYxNkc47b+PC6LpzOx0E6eCJ-l5mDOh5wdfsB5gQcl2jXNjeX2M23jQuE47deUpclpmB4GjnKc-gcqxdP513gea3ZoE65BMFwUbNBDabsPr5gVtYQpCAC9X4-E-XhGPv5njRfoCaBIroLiE8pAQCGABugoeq2XSgNESR8cCf2-r-ABoJz5TRUBUKoNQcwNBisRMcPR8LPihIYYwwwKiK1ECiD4qR850E-jETeIDhKORLMQsApCDrkNkFAOBUcyinGosgkWW01DlFNFpU4WCGQaEqm1ZeXJvwACM8CkAANagieKIIgsQXJALSv1GhWVXQyPkYo5RqiyBsMrqPe2tdxbtCThFDwpxnAGiGIrTAkgwDrkMbxGyGj7JgJNjgJxsAXEVjccYkedsa4TwsdHDO1ilJDB8EYdkIROSkHEBAOA8gES82tpfAAtAI9ouSjgiSKcUiRrooizCgJki+3kPB0nwjUIk8ZVAMkGADZplocx9DwSLTwkMV7YCRM8N4HwqnwLKAER8AwSTpnMKYDwlJs5dDzMsvMUJml9MkVMUsaFRSjPYSYcwNE7Q5hERVZQoUag0XpNadwepnA+EVhJTi3F1x7JPK-Lw+EjS9GMLUdQZ4mihUMPhZwlgmK-P+WYRWSURoRDedhQIlInR4yMMONQLS3AdxVubdW8LL7EUtL804LUdjNIBu4XUJJUUND8PRJoWKC7dzxd5I0E4+hOgGHpMwksxyfKGB4VqPTX5vw-l-H+-9BTMtWBoFaOxCINEJNaCJCBxzCKhFOBeC5CH0MYbDZh5ApUqEJBOX6PghZuBlaFQIlpblZzwYMeK-TdEKKUSolyhqVW0popUVqtKRhvn0Bc1Qk5Io1SdFCUwn5Nm+Oca491Edh74v1K4OJjtpwGDMGOCo0T-KBCnEaRJQQgA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QHcAWYwBsB0yCGAlgC4EB2UAxAHICiA6gPoAKAMgIICaNASgNoAMAXUSgADgHtYxAuNIiQAD0QAWAEwAaEAE9EATn4B2bLuUBGVaYAcV-QYBsAXwea0GHPmnkKAZQAqbbl8GAHE2AFkaAWEkEAkpEll5JQRVVQBmbDsDXQNlaztdNINTc00dBFN+UwBWbDTKg2zVXWrdXUtlJxd0LFxCEi8o+TjpRJjk1IysnLzTAqKSjW09ArqGtWtlPOaukFde0jBkJgBXAC8zzDAKIZiRhLlxxDs7WtNlfkt+Zq-TXTtlGVEJUqtgDKpcmkWr9PgZdvscKJMHgtGAAE6+E5o0g+JgASSoDDoAAkaDQWLcxJJRo9QMkWspsKZsl9VJZWnZVJ8gSkTHUCgZqh02mllFlOs49j1EcjURisTiAEIAVQ4DAAagB5OjkymxakPJJ6aqM5ntb7s-5cyw8kG6bBqKyWNJpOx-fh2Szw6XYJEo9GY7E+TUsdU0ZjKgBakZYkSEwwNMlpimNppZFo51ttaX4U2KlkKL1UL1M3rcvtlAYVwdD4aYUZjkVM0Sp8STRoQDKZ6bZme5ywqzLs3b+eRN4LaZd6frlgZxevu7aenZN3fNvat-fK5mqRiyVl3VhKymq1SnMv98qDClgRDwRDA2DwADMH2iABSsTg8Bh4gAisYML4eIRAAlBQCIVpec4LomYx0qma6spanJbogXL8GC1T8FURT2AY-C6Oe2CHAoRBMJWV7zvGdxwcmEzKPY2C5qYaQFroXLFs6PLWA6bQilsLoQgCxGwKIZB0NKFA3neD5Pq+6LviC-DgZBYkSdKsFtvBKYpMWtSWFkor1Kxzp2Dy9T2vxJivC6Nk5KJ4mkJJbjSbe96Pi+b5KThKkQT66nOZpzYJtp9Hofp2CGQYxklGxro8mYGQniZdhpNUrGEWkjkaa5MkefJ3nKapAVOS5WC8KoLb6mFHZWBYzEmtY-y6H8+GJTUTJtc6VTZIKRGSpBUAnHAsAAMKyLAshgKQRAUMEyo0N43gMLGvi+DwWk0nVLq1Ko2GLLmhj7boPLVK8jVpcorqqMorUDd05bDaNE2kFNhyzfNi3LatNDrZtIW0bVy5zK1SGutYrTvDaA5CvaKWEfwu6Cq6cKDT6z2wONk3TZ9C1LSta0bXwVWhdtIMFKY4OejUrV5DyxSqFFrQfGkbIFNU6XEZj2Nvbjc35XJXmKV+XDcL+AHhsBYH+U9I1Y6970zUQW2GhTYNmmZkN0zD5QmlTLRs-tHo5nYHrc-LsDquIyBYF9BO-f9fA0a25MIRU6XDpzrGNKh7JsTy-xU-uHS3Tk1T7Rbo3W7bmD2z9RMA9Vi46ckoNU5rEO09DPHnVF5hbAUBZssUUdYzHdv4wnf3E5Vyd0XVlPU9rOcDua2AWJY-VFwRUJl1bNt24LnkKR+os-v+gHSzQJVy9Hg+YKrS7u+nzfZ-TA5xZhzJ-OYHq7s6Z7o+WojnJcYDBJbE1omiYAAMYC+5Qujz5OGz9OZ9XJfL3iDf98qy7GqbtdKr0zjTKGG9tzNCMBxNq4IMrMiFMRU+Fwv6WzoGiWQlBh6FUUsVWWH9UEX3QZg8gS9U7AibmAlukDgTMj3MUFoEI2YmleMRK4RA3ywDxKQU4RC3KyRHkVXy78cAcK4Twvh59yHhQqIURkBZDCemaK8Ysp0BxfHtPUW6JtUgRwlI9A44gWBgE4eibhvDP7XBwcLD8+DIKkGMaYiRliiEyI7KkC60VYqmQSpvKomFYGWC7uOGoJ4nCSkcRAOA8gERkzVu7AAtOZAciTajWQydZHCR9DHuH6GQKA8Tl66WyB3YsZtrrpRqK3bcOEtEmFSOYW6AIXjEUOMcKxRSKEIGwsOKwgoCx3Vsik8oOQjCpFyGyCwOEDDsmQZROcXTZH2Ewp4uGRQOT8EBG3RoZTJmWGmYYOZx8DhgDIhRaCColkeLShnZkVSxTOj+CMuhVhsCc3qIfE2rMcpBTcNc5cXImIujNl3OYAJ0rbPKEURkvdCJbFYoxDK-dFb8wBSvMw8NDy7jFDFWZ1QeSoXeedCwgpCKKNUP3CumB0UgK2LC94IocJFBeLaXqI4Cw1FFLMtmyCrHfwVr-W+D9aVpzMEzCEuRBSMWyIYNItoVHGE7uyPIOQOho1yb6flJCsGiuBGYTCB9UgHOUVkF5g4mJZC5K6cwoo1A5KlOWcR5jJGdKBsAiYSi6iulhOC66JoeIdCZB8c6rwXhIz+G0pxZi0QWKkVcPVKQvUgt9S8f1ULgR1KVU6EF7oCjczwAAWzAJqAAbuiRNQLhwprBWmyFCr-jZpyKbVobJSwRKAA */
   createMachine(
     {
       schema: {
@@ -225,11 +204,8 @@ const wheelMachine =
         spinWheel,
         guessConsonent,
         guessVowel,
-        roundOver,
         puzzleGuessCorrect,
         puzzleGuessWrong,
-        bankruptSpin,
-        loseTurnSpin,
         lettersInPuzzle,
         noLettersInPuzzle,
         gameOver,
@@ -321,7 +297,6 @@ const wheelMachine =
         },
 
         updateUsedLetters: (context: WheelContext, event: any) => {
-          console.log(`letter is: ${event.letter}`);
           context.guessedLetters.push(event.letter);
         },
 

@@ -82,12 +82,12 @@ function printBoard(context: WheelContext, fullBoard: boolean = false) {
 
 function printUsedLetters(context: WheelContext) {
   function inner(letter: string) {
-    return (context.guessedLetters.includes(letter) ? chalk.gray : chalk.whiteBright)(letter);
+    return context.guessedLetters.includes(letter) ? chalk.gray(letter) : chalk.whiteBright(letter.toUpperCase());
   }
 
-  let avail = '';
+  let avail = '  ';
   avail += 'abcdefghijklm'.split('').map(inner).join(' ');
-  avail += '\n';
+  avail += '\n  ';
   avail += 'nopqrstuvwxyz'.split('').map(inner).join(' ');
   console.log(avail);
 }
@@ -231,7 +231,7 @@ sub('noLettersInPuzzle', state => {
 });
 
 sub('puzzleGuessCorrect', state => {
-  console.log(printBoard(state.context, true));
+  printBoard(state.context, true);
   console.log('You got it!');
 });
 
