@@ -6,6 +6,35 @@ interface Player {
   score: number
 }
 
+type WheelValue = string | number;
+const wheelValues: WheelValue[] = [
+  5000,
+  500,
+  900,
+  700,
+  600,
+  650,
+  500,
+  700,
+  500,
+  600,
+  550,
+  500,
+  600,
+  'bankrupt',
+  650,
+  850,
+  700,
+  'lose-a-turn',
+  800,
+  500,
+  650,
+  500,
+  900,
+  'bankrupt',
+  5000
+];
+
 interface WheelContext {
   players: Player[],
   currentPlayerNum: number,
@@ -13,7 +42,7 @@ interface WheelContext {
   category: string,
   puzzle: string,
   guessedLetters: string[],
-  spinAmount: number,
+  spinAmount: WheelValue,
 }
 
 const waiting = {
@@ -69,6 +98,8 @@ const spinWheel = {
   entry: 'spinWheel',
   after: {
     1000: [
+      { cond: 'isSpinBankrupt', target: 'bankruptSpin' },
+      { cond: 'isSpinLoseATurn', target: 'loseTurnSpin' },
       { target: 'guessConsonent' }
     ]
   }
@@ -81,10 +112,22 @@ const nextPlayerTurn = {
   }
 };
 
-const puzzleGuessWrong = {
-  entry: 'cycleNextPlayer',
+const bankruptSpin = {
+  entry: 'bankruptCurrentPlayer',
   after: {
-    1000: 'playerTurn'
+    1000: 'nextPlayerTurn'
+  }
+};
+
+const loseTurnSpin = {
+  after: {
+    1000: 'nextPlayerTurn'
+  }
+};
+
+const puzzleGuessWrong = {
+  after: {
+    1000: 'nextPlayerTurn'
   }
 };
 
@@ -123,7 +166,7 @@ const guessVowel = {
 };
 
 const wheelMachine =
-  /** @xstate-layout N4IgpgJg5mDOIC5QHcAWYwBsB0yCGAlgC4EB2UAxAHICiA6gPoAKAMgIICaNASgNoAMAXUSgADgHtYxAuNIiQAD0QBGAEzKArNg0B2fgBYdqgGzHNAZgCc5gDQgAnolXnz2Z-uOXV3-fwAclsYAvkF2aBg4+NLkFADKACps3PEMAOJsALI0AsJIIBJSJLLySgjKVjpuGvzKppZ+esp2jgiqXtjmGvr6lvoaxn3m-LohYehYuIQkMTnyBdLFeaXllpWq1bWeDTXNiOb6qth+XR465jrGF5ejIOETpGDITACuAF6vmGAUCrBEeERgbB4ABmAIATgAKZT8GEASgodxwDyebw+YFmeXmRTkSxUGg0fg6akuXksyj85j8fl2CF62FWxhOqjOx0sGnMN0R2FEmDw9jAYPizzBpDiTAAklQGHQABI0GgsDFiSQLHGgUp9ZTadzGfyXY7mTQ08zqen8Mxk-gXDTKTnjHA8vkCoUiigAIQAqhwGAA1ADydAVSvyKuxJT2Bg6lnNXUpbIG6xp+nJHQ0Xj8Bmq63x+jtEW5vP5guFotifpYPpozA9AC0ayxskI5qGZGrFIhrdhjOthuZTDpahSaRnKoE-N2hvwyYFbaFbvaC07i66yxWq0xa-XsspcsrCq3wwhO93quz+4PbA5EOPjNgPOPqhmyXG8xNHUWXaKfn8AUDQQKIVYTgeAYcUABEGwYeJxSyeEuXfZ0S2DLED1xI9GS7Hsz0uC8k28bAYVJVQ-HURlrFfJEwAUIgmELRDXW-f5ARBcEoRhfg4IXB5qNopdP2QltFnVFR+CGKpCMNM442pK8EHOfRtCnFxrGUU4dEsCjsCgZ44FgABhWRYFkMBSCIChUg9GhYliBgG3ieIeAE-chPbVpum0TQBn4bMGj6GlvC0QZoWUPRmQGDxNO03SDNIIyHlM8zLOs2yaHsxyd2bZy21KVR3JtfpfB8nQ-NkvwtWqdjKX2FwrWCOcuSi2B9MM4yEsY38WIAoCuG4UCIKraDYIRBdGua2LWqIJzVUPXKFPyryipKloQtHdklNUfxapcSKdKan1xGQLBEqsmy7Icvgm0xQTsqcPLPMK-FfI0JNjEJVl1hNbsehCjl6pG3bYH2w7MGO5KzvS3cQyyma7oK7zHuK57ZLTQ4THxfoqWUNlLA0v781GoGjva5j-0hbqQPAyDBpoTj8YBwnMCmsM0Nmjy4cWpGWlewkB3HDxsz0LpNLBcRnlICA-QANwFb5fiYv9WOhOFhvzEWxYl6WwSZ1DhLKCpxM2epGmHKc71e3QLmK5Rah0TTRFRT5UgBugRZiYmFYApWOJVt8HbAJ3dJd2QoG1lzln1ntDe2JpSsuelXt1LpiuGQIQjnUhxAgOB5ERTLprQgBaYwaSLzSommKA8+Z3W1A0Q51L0XxanNXpVGNfYuwaHQyrTbvOhCzTkRed5PirnXXMHSxsB0XQvGtV6hmL2STX4bBoW6KxVPWQJ+jtujlzbFCw8QC0uwHaNzisfx+iTWoCKnYjDU8USscHqiaP3z8x+PsoQq1Twuj5XKOpTmexrBrwaE+CoOhu47Wii1eKRBv43QQAcduWgXDMl0DaTo1gKRwL2gdLAyDDzdw6MRTQ19nCiQHDSS4WhBzhRnr0K0wtRbiylgKEhaE1B30wc4fY1Q2QyRaBmQk94MbeVUgEX6Yx8z2xHv7Z2rtK5XWhjw8kCkXC6mTMYIYFIXDDlMPHB8m1ny4xCEAA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QHcAWYwBsB0yCGAlgC4EB2UAxAHICiA6gPoAKAMgIICaNASgNoAMAXUSgADgHtYxAuNIiQAD0QAmACwB2AKzYAbPwCM6-QA5+Ow8uXqANCACeidauPZVO5Zv6adp-QE5VZQBfINs0DBx8aXIKAGUAFTZueIYAcTYAWRoBYSQQCSkSWXklBGUdTXVsZWN9b34atwBmP1sHBFMqzWNlJr71Y3UdP34-ELD0LFxCEhic+QLpYrzS8srq2vrGnRa2xGNu7H4epsNNcpbNcZBwqdIwZCYAVwAvF8wwCgVYIjwiMGweAAZv8AE4ACn0-GhAEoKLccPdHq93mB5nlFkU5CsVLUXE1VE0Dn4Wqc9Jo9gg3MpsPplH59CYmqMCapVFdQjdJjhRJg8HYwKD4k9QaQ4kwAJJUBh0AASNBoLHRYkkS2xoFK+h8TWwmk0GjUOiG-R0lKhVmwfmUJmU-BaqjqfmM1wR2F5-MFwtFFAAQgBVDgMABqAHk6IrlflVViSog6k0dK5rSSfHb+EZKVZtHV3E1yj16WNOa73QKhSKxbEQywgzRmH6AFoNljZIQLaMydWKFT8dm6bxWYY9NxOyndfTYJrqBl2rS9brO4vct18steyvV2v1pst3j6XIqwqd2NlXvaCruIZOw2j+yII1+SfTwwM6fqAmLiYRFce8ve76-P8gIgoK4KsJwPAMBKAAiLYMPEEpZHCJarp6FaRpix44ggWp5tggyaIyOx+EY9I2HeCDmPw2BDM4hGnE6xh+EWX53GAChEEwqF-mKAF-ACwJgpC0L8Mhy73BxXG-uuGEdssGpxpoCZJv4CamMyGYURULjlM4PR6OoagNC6y6wKIZB0NyXw-PxwFCVCsLwqZ5mkJZESyUe8ndmU3i6qcNRWuyBgaJSOjOPhdKETsxiEiRwRLt+ZkWVZfFAYJoEOaJTmJS5blYHuB5Rp5XarL5Sl0kxaiePoIUUd4ia1B4ljeMYRIOiZOXJRE1mAQJIEQplYmda53K8MohWYV5pWJuVAVVcF5HtAciYElOdJmJUCbqB1UxQE8cCwAAwrIsCyGApBEBQqR+jQsSxAwLbxPEPAeWqJ56omAwVSYhk+PqlKmI+LJODUmhWmD20Jbt+2wEdJ1nRdV03XdD00E9L37u2xUnla1FGKM75gxchgA8pazdISdpGaoO04HtB3HaQp33Ij123fdj3PXw41Y292G4zRUIkU0RM7CTWl+CtkUNFO6bePotPYPTsOM8z52XalfVCeBXDcFBsF1ghSHZdDDPwyzRCvTG-O2oLBMi1aYuLY4Iw0ReybLbmivK7AQbiMgWBI+zqPo3wbYYnJJWIN0Oo5lYqhmGFgOUkF1TuDoegGOoWg1d7MO+-7gdsyjnMYxNkc47b+PC6LpzOx0E6eCJ-l5mDOh5wdfsB5gQcl2jXNjeX2M23jQuE47deUpclpmB4GjnKc-gcqxdP513gea3ZoE65BMFwUbNBDabsPr5gVtYQpCAC9X4-E-XhGPv5njRfoCaBIroLiE8pAQCGABugoeq2XSgNESR8cCf2-r-ABoJz5TRUBUKoNQcwNBisRMcPR8LPihIYYwwwKiK1ECiD4qR850E-jETeIDhKORLMQsApCDrkNkFAOBUcyinGosgkWW01DlFNFpU4WCGQaEqm1ZeXJvwACM8CkAANagieKIIgsQXJALSv1GhWVXQyPkYo5RqiyBsMrqPe2tdxbtCThFDwpxnAGiGIrTAkgwDrkMbxGyGj7JgJNjgJxsAXEVjccYkedsa4TwsdHDO1ilJDB8EYdkIROSkHEBAOA8gES82tpfAAtAI9ouSjgiSKcUiRrooizCgJki+3kPB0nwjUIk8ZVAMkGADZplocx9DwSLTwkMV7YCRM8N4HwqnwLKAER8AwSTpnMKYDwlJs5dDzMsvMUJml9MkVMUsaFRSjPYSYcwNE7Q5hERVZQoUag0XpNadwepnA+EVhJTi3F1x7JPK-Lw+EjS9GMLUdQZ4mihUMPhZwlgmK-P+WYRWSURoRDedhQIlInR4yMMONQLS3AdxVubdW8LL7EUtL804LUdjNIBu4XUJJUUND8PRJoWKC7dzxd5I0E4+hOgGHpMwksxyfKGB4VqPTX5vw-l-H+-9BTMtWBoFaOxCINEJNaCJCBxzCKhFOBeC5CH0MYbDZh5ApUqEJBOX6PghZuBlaFQIlpblZzwYMeK-TdEKKUSolyhqVW0popUVqtKRhvn0Bc1Qk5Io1SdFCUwn5Nm+Oca491Edh74v1K4OJjtpwGDMGOCo0T-KBCnEaRJQQgA */
   createMachine(
     {
       schema: {
@@ -157,6 +200,8 @@ const wheelMachine =
         guessVowel,
         roundOver,
         puzzleGuessWrong,
+        bankruptSpin,
+        loseTurnSpin,
       },
       predictableActionArguments: true
     },
@@ -205,6 +250,14 @@ const wheelMachine =
 
           return ['a', 'e', 'i', 'o', 'u'].includes(letter) == true;
         },
+
+        isSpinBankrupt: (context: WheelContext, event: any): boolean => {
+          return context.spinAmount == 'bankrupt';
+        },
+
+        isSpinLoseATurn: (context: WheelContext, event: any): boolean => {
+          return context.spinAmount == 'lose-a-turn';
+        },
       },
 
       actions: {
@@ -219,7 +272,8 @@ const wheelMachine =
         },
 
         spinWheel: (context: WheelContext, event: any) => {
-          context.spinAmount = Math.round(Math.random() * 500);
+          const random = Math.floor(Math.random() * wheelValues.length);
+          context.spinAmount = wheelValues[random];
         },
 
         buyVowel: (context: WheelContext, event: any) => {
@@ -232,9 +286,14 @@ const wheelMachine =
         },
 
         addScore: (context: WheelContext, event: any) => {
+          if (typeof context.spinAmount != 'number') return;
           const matches = context.puzzle.match(new RegExp(event.letter, 'g'))?.length ?? 0;
           context.currentPlayer.score += matches * context.spinAmount;
-        }
+        },
+
+        bankruptCurrentPlayer: (context: WheelContext, event: any) => {
+          context.currentPlayer.score = 0;
+        },
       },
 
       delays: {
@@ -243,4 +302,4 @@ const wheelMachine =
     }
   );
 
-export { wheelMachine, WheelContext };
+export { wheelMachine, WheelContext, WheelValue, wheelValues };

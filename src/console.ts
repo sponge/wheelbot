@@ -155,3 +155,13 @@ wheelService.subscribe(async (state) => {
 
   wheelService.send('GUESS_LETTER', { letter });
 });
+
+wheelService.subscribe(async (state) => {
+  if (!state.matches('bankruptSpin')) return;
+  console.log(chalk.bgRed.whiteBright("BANKRUPT!"));
+});
+
+wheelService.subscribe(async (state) => {
+  if (!state.matches('loseTurnSpin')) return;
+  console.log(chalk.bgWhiteBright.black("LOSE A TURN!!"));
+});
