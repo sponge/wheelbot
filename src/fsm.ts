@@ -68,9 +68,7 @@ const startGame = {
     context.guessedLetters = [];
   },
 
-  after: {
-    100: 'playerTurn'
-  }
+  always: 'playerTurn'
 };
 
 const playerTurn = {

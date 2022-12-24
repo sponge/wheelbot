@@ -5,7 +5,6 @@
         '@@xstate/typegen': true;
         internalEvents: {
           "": { type: "" };
-"xstate.after(100)#wheel.startGame": { type: "xstate.after(100)#wheel.startGame" };
 "xstate.after(1000)#wheel.lettersInPuzzle": { type: "xstate.after(1000)#wheel.lettersInPuzzle" };
 "xstate.after(1000)#wheel.noLettersInPuzzle": { type: "xstate.after(1000)#wheel.noLettersInPuzzle" };
 "xstate.after(1000)#wheel.puzzleGuessCorrect": { type: "xstate.after(1000)#wheel.puzzleGuessCorrect" };
@@ -35,7 +34,7 @@
 "updateUsedLetters": "GUESS_LETTER";
         };
         eventsCausingDelays: {
-          "PLAYER_IDLE_TIME": "" | "BUY_VOWEL" | "GUESS_LETTER" | "xstate.after(100)#wheel.startGame" | "xstate.after(1000)#wheel.lettersInPuzzle" | "xstate.after(1000)#wheel.spinWheel";
+          "PLAYER_IDLE_TIME": "" | "BUY_VOWEL" | "GUESS_LETTER" | "xstate.after(1000)#wheel.lettersInPuzzle" | "xstate.after(1000)#wheel.spinWheel";
         };
         eventsCausingGuards: {
           "hasAnyPlayers": "START_GAME";
