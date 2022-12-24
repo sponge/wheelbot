@@ -78,6 +78,10 @@ const playerTurn = {
     context.spinAmount = 0;
   },
 
+  always: [
+    { cond: 'isPuzzleSolved', target: 'puzzleGuessCorrect' },
+  ],
+
   on: {
     SPIN_WHEEL: 'spinWheel',
 
@@ -87,7 +91,7 @@ const playerTurn = {
     },
 
     SOLVE_PUZZLE: [
-      { cond: 'isPuzzleGuessCorrect', target: 'roundOver' },
+      { cond: 'isPuzzleGuessCorrect', target: 'puzzleGuessCorrect' },
       { cond: 'isPuzzleGuessWrong', target: 'puzzleGuessWrong' },
     ]
   },
@@ -124,6 +128,16 @@ const loseTurnSpin = {
   after: {
     1000: 'nextPlayerTurn'
   }
+};
+
+const puzzleGuessCorrect = {
+  after: {
+    1000: 'gameOver'
+  }
+};
+
+const gameOver = {
+
 };
 
 const puzzleGuessWrong = {
@@ -212,11 +226,13 @@ const wheelMachine =
         guessConsonent,
         guessVowel,
         roundOver,
+        puzzleGuessCorrect,
         puzzleGuessWrong,
         bankruptSpin,
         loseTurnSpin,
         lettersInPuzzle,
         noLettersInPuzzle,
+        gameOver,
       },
       predictableActionArguments: true
     },
@@ -273,6 +289,15 @@ const wheelMachine =
         isSpinLoseATurn: (context: WheelContext, event: any): boolean => {
           return context.spinAmount == 'lose-a-turn';
         },
+
+        isPuzzleSolved: (context: WheelContext, event: any): boolean => {
+          for (let letter of context.puzzle) {
+            if (!Utils.isAnyLetter(letter)) continue;
+            if (!context.guessedLetters.includes(letter)) return false;
+          }
+
+          return true;
+        },
       },
 
       actions: {
@@ -302,7 +327,7 @@ const wheelMachine =
 
         addScore: (context: WheelContext, event: any) => {
           if (typeof context.spinAmount != 'number') return;
-          const matches = Utils.getLettersInPuzzle(context.puzzle, event.letter);
+          const matches = Utils.countLettersInPuzzle(context.puzzle, event.letter);
           context.currentPlayer.score += matches * context.spinAmount;
         },
 

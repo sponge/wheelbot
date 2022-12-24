@@ -73,11 +73,11 @@ function printScores(context: WheelContext) {
   console.log(str);
 }
 
-function printBoard(context: WheelContext) {
+function printBoard(context: WheelContext, fullBoard: boolean = false) {
   let category = context.category;
   let halfPad = 14 - category.length / 2;
-  console.log(' '.repeat(Math.floor(halfPad)) + context.category + ' '.repeat(Math.ceil(halfPad)));
-  console.log(Utils.getEmojiBoard(context.puzzle, context.guessedLetters));
+  console.log(chalk.bgBlue.whiteBright(' '.repeat(Math.floor(halfPad)) + context.category + ' '.repeat(Math.ceil(halfPad))));
+  console.log(Utils.getEmojiBoard(context.puzzle, fullBoard ? undefined : context.guessedLetters));
 }
 
 function printUsedLetters(context: WheelContext) {
@@ -215,7 +215,7 @@ sub('guessVowel', async state => {
 
 sub('lettersInPuzzle', state => {
   const lastGuess = state.context.guessedLetters.slice(-1)[0];
-  const count = Utils.getLettersInPuzzle(state.context.puzzle, lastGuess);
+  const count = Utils.countLettersInPuzzle(state.context.puzzle, lastGuess);
   const amt = typeof state.context.spinAmount != 'number' ? 0 : count * state.context.spinAmount;
 
   if (Utils.letterIsVowel(lastGuess)) {
@@ -228,4 +228,18 @@ sub('lettersInPuzzle', state => {
 sub('noLettersInPuzzle', state => {
   const lastGuess = state.context.guessedLetters.slice(-1)[0].toUpperCase();
   console.log(`There's no ${lastGuess} in the puzzle.`)
+});
+
+sub('puzzleGuessCorrect', state => {
+  console.log(printBoard(state.context, true));
+  console.log('You got it!');
+});
+
+sub('puzzleGuessWrong', state => {
+  console.log('Incorrect guess.')
+});
+
+sub('gameOver', state => {
+  console.log('Game over!');
+  process.exit(0);
 });

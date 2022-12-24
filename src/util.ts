@@ -1,6 +1,7 @@
 export default {
-  getLettersInPuzzle: (puzzle: string, letter: string): number => puzzle.match(new RegExp(letter, 'g'))?.length ?? 0,
-  letterIsVowel: (letter: string): boolean => ['a', 'e', 'i', 'o', 'u'].includes(letter),
+  countLettersInPuzzle: (puzzle: string, letter: string): number => puzzle.match(new RegExp(letter, 'g'))?.length ?? 0,
+  letterIsVowel: (letter: string): boolean => 'aeiou'.includes(letter),
+  isAnyLetter: (letter: string): boolean => 'abcdefghijklmnopqrstuvwxyz'.includes(letter),
 
   wordWrap: (sentence: string, maxLength: number): string[] => {
     // Initialize variables to store the current line and the remaining text
@@ -44,7 +45,7 @@ export default {
     return lines;
   },
 
-  getEmojiBoard(puzzle: string, guessedLetters: string[]): string {
+  getEmojiBoard(puzzle: string, guessedLetters?: string[]): string {
     const letters = 'abcdefghijklmnopqrstuvwxyz';
     const fullwidth = 'ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ';
     let board = [];
@@ -68,7 +69,7 @@ export default {
       for (let letter of line) {
         if (letter == ' ') boardLine += '🟩';
         else if (letters.includes(letter) == false) boardLine += letter; // - & ? ' . ! :
-        else if (guessedLetters.includes(letter)) boardLine += fullwidth[letters.indexOf(letter)];
+        else if (!guessedLetters || guessedLetters.includes(letter)) boardLine += fullwidth[letters.indexOf(letter)];
         else boardLine += '⬜';
       }
 
