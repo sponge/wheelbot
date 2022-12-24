@@ -101,7 +101,7 @@ const wheelService = interpret(wheelMachine)
   .start();
 
 type WheelCallback = (state: typeof wheelService.initialState) => void;
-function sub(stateName: string, cb: WheelCallback) {
+function sub(stateName: any, cb: WheelCallback) {
   wheelService.subscribe(async state => {
     if (!state.matches(stateName)) return;
     cb(state);
@@ -128,6 +128,10 @@ for (let i = 0; i < numPlayers; i++) {
   })
 
   wheelService.send('NEW_PLAYER', ans);
+}
+
+if (wheelService.getSnapshot().matches('waiting')) {
+  wheelService.send('START_GAME');
 }
 
 sub('playerTurn', async state => {
