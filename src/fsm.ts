@@ -1,5 +1,10 @@
-import { StringSelectMenuBuilder } from '@discordjs/builders';
 import { createMachine } from 'xstate';
+import { puzzles } from './puzzles.js';
+
+const Utils = {
+  getLettersInPuzzle: (puzzle: string, letter: string): number => puzzle.match(new RegExp(letter, 'g'))?.length ?? 0,
+  letterIsVowel: (letter: string): boolean => ['a', 'e', 'i', 'o', 'u'].includes(letter),
+}
 
 interface Player {
   name: string,
@@ -57,10 +62,12 @@ const waiting = {
 
 const newPuzzle = {
   entry: (context: WheelContext, event: any) => {
+    const random = Math.floor(Math.random() * puzzles.length);
+    context.category = puzzles[random].category;
+    context.puzzle = puzzles[random].puzzle.toLowerCase();
+
     context.currentPlayerNum = 0;
     context.currentPlayer = context.players[0];
-    context.category = "Famous Placeholder Messages";
-    context.puzzle = "hello world".toLowerCase();
     context.spinAmount = 0;
     context.guessedLetters = [];
   },
@@ -106,10 +113,8 @@ const spinWheel = {
 }
 
 const nextPlayerTurn = {
-  entry: 'cycleNextPlayer',
-  after: {
-    1000: 'playerTurn'
-  }
+  entry: ['cycleNextPlayer'],
+  always: 'playerTurn'
 };
 
 const bankruptSpin = {
@@ -141,8 +146,8 @@ const guessConsonent = {
   on: {
     GUESS_LETTER: [
       { cond: 'notConsonantGuess', target: 'guessConsonent' },
-      { cond: 'letterInPuzzle', actions: ['updateUsedLetters', 'addScore'], target: 'playerTurn' },
-      { cond: 'letterNotInPuzzle', actions: ['updateUsedLetters'], target: 'nextPlayerTurn', },
+      { cond: 'letterInPuzzle', actions: ['updateUsedLetters', 'addScore'], target: 'lettersInPuzzle' },
+      { cond: 'letterNotInPuzzle', actions: ['updateUsedLetters'], target: 'noLettersInPuzzle', },
     ]
   },
 
@@ -155,13 +160,25 @@ const guessVowel = {
   on: {
     GUESS_LETTER: [
       { cond: 'notVowelGuess', target: 'guessVowel' },
-      { cond: 'letterInPuzzle', actions: ['buyVowel', 'updateUsedLetters'], target: 'playerTurn' },
-      { cond: 'letterNotInPuzzle', actions: ['buyVowel', 'updateUsedLetters'], target: 'nextPlayerTurn' },
+      { cond: 'letterInPuzzle', actions: ['buyVowel', 'updateUsedLetters'], target: 'lettersInPuzzle' },
+      { cond: 'letterNotInPuzzle', actions: ['buyVowel', 'updateUsedLetters'], target: 'noLettersInPuzzle' },
     ]
   },
 
   after: {
     PLAYER_IDLE_TIME: 'nextPlayerTurn'
+  }
+};
+
+const lettersInPuzzle = {
+  after: {
+    1000: 'playerTurn'
+  }
+};
+
+const noLettersInPuzzle = {
+  after: {
+    1000: 'nextPlayerTurn'
   }
 };
 
@@ -202,6 +219,8 @@ const wheelMachine =
         puzzleGuessWrong,
         bankruptSpin,
         loseTurnSpin,
+        lettersInPuzzle,
+        noLettersInPuzzle,
       },
       predictableActionArguments: true
     },
@@ -287,7 +306,7 @@ const wheelMachine =
 
         addScore: (context: WheelContext, event: any) => {
           if (typeof context.spinAmount != 'number') return;
-          const matches = context.puzzle.match(new RegExp(event.letter, 'g'))?.length ?? 0;
+          const matches = Utils.getLettersInPuzzle(context.puzzle, event.letter);
           context.currentPlayer.score += matches * context.spinAmount;
         },
 
@@ -302,4 +321,4 @@ const wheelMachine =
     }
   );
 
-export { wheelMachine, WheelContext, WheelValue, wheelValues };
+export { wheelMachine, WheelContext, Utils };

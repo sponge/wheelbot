@@ -2,7 +2,60 @@ import { interpret } from 'xstate';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 
-import { wheelMachine, WheelContext } from './fsm.js'
+import { wheelMachine, WheelContext, Utils } from './fsm.js';
+
+/*
+import { puzzles } from './puzzles.js';
+
+const weirdLetters: string[] = [];
+for (let puzzle of puzzles) {
+  for (let letter of puzzle.puzzle.toLowerCase()) {
+    if (letter == ' ') continue;
+    if (weirdLetters.includes(letter)) continue;
+    if (!'abcdefghijklmnopqrstuvwxyz'.includes(letter)) {
+      console.log(`weird letter: ${letter} (${letter.charCodeAt(0)})`);
+      weirdLetters.push(letter);
+    }
+  }
+}
+console.log('done scanning');
+*/
+
+/*
+var links = [
+  'http://buyavowel.boards.net/page/compendium30',
+  'http://buyavowel.boards.net/page/compendium31',
+  'http://buyavowel.boards.net/page/compendium32',
+  'http://buyavowel.boards.net/page/compendium33',
+  'http://buyavowel.boards.net/page/compendium34',
+  'http://buyavowel.boards.net/page/compendium35',
+  'http://buyavowel.boards.net/page/compendium36',
+  'http://buyavowel.boards.net/page/compendium37',
+  'http://buyavowel.boards.net/page/compendium38',
+  'http://buyavowel.boards.net/page/compendium39',
+  'http://buyavowel.boards.net/page/compendium40',
+  'http://buyavowel.boards.net/page/compendiumwii',
+]
+
+var parser = new DOMParser()
+var puzzles = [];
+await 'asdf'
+
+for (var link of links) {
+ 	var resp = await fetch(link);
+  var text = await resp.text();
+  var dom = parser.parseFromString(text, 'text/html');
+  var arr = Array.from(dom.querySelector('#zone_2 table').rows)
+    .filter(el => el.style.backgroundColor != 'rgb(59, 185, 255)')
+    .slice(1)
+    .map(el => { return { category: el.cells[1].innerText, puzzle: el.cells[0].innerText } })
+		.filter(puzzle => puzzle.category.length != 0 && puzzle.puzzle.length != 0);
+  
+  puzzles = puzzles.concat(arr);
+}
+
+console.log(JSON.stringify(puzzles))
+*/
 
 function printScores(context: WheelContext) {
   let i = 0;
@@ -29,7 +82,7 @@ function printBoard(context: WheelContext) {
     else board += '⬜';
   }
 
-  console.log(context.category.toUpperCase());
+  console.log(context.category);
   console.log(board);
 }
 
@@ -53,6 +106,14 @@ const wheelService = interpret(wheelMachine)
   .onTransition((state: any) => console.log(`New state: ${state.value}`))
   .start();
 
+type WheelCallback = (state: typeof wheelService.initialState) => void;
+function sub(stateName: string, cb: WheelCallback) {
+  wheelService.subscribe(async state => {
+    if (!state.matches(stateName)) return;
+    cb(state);
+  });
+}
+
 const { numPlayers } = await inquirer.prompt({
   type: 'list',
   name: 'numPlayers',
@@ -75,9 +136,7 @@ for (let i = 0; i < numPlayers; i++) {
   wheelService.send('NEW_PLAYER', ans);
 }
 
-wheelService.subscribe(async (state) => {
-  if (!state.matches('playerTurn')) return;
-
+sub('playerTurn', async state => {
   const { currentPlayer } = state.context;
 
   console.log();
@@ -113,12 +172,12 @@ wheelService.subscribe(async (state) => {
   }
 });
 
-wheelService.subscribe(async (state) => {
-  if (!state.matches('guessConsonent')) return;
-
-  const { currentPlayer, guessedLetters } = state.context;
-
+sub('spinWheel', state => {
   console.log(`You spun $${state.context.spinAmount}`);
+})
+
+sub('guessConsonent', async state => {
+  const { currentPlayer, guessedLetters } = state.context;
 
   const { letter } = await inquirer.prompt({
     type: 'input',
@@ -127,7 +186,7 @@ wheelService.subscribe(async (state) => {
     validate: input => {
       if (input.length != 1) return 'Only one letter at a time!';
       if (guessedLetters.includes(input)) return 'Already guessed letter!';
-      if (['a', 'e', 'i', 'o', 'u'].includes(input)) return "Can't choose a vowel!";
+      if (Utils.letterIsVowel(input)) return "Can't choose a vowel!";
       return true;
     }
   });
@@ -135,9 +194,7 @@ wheelService.subscribe(async (state) => {
   wheelService.send('GUESS_LETTER', { letter });
 });
 
-wheelService.subscribe(async (state) => {
-  if (!state.matches('guessVowel')) return;
-
+sub('guessVowel', async state => {
   const { currentPlayer, guessedLetters } = state.context;
 
   const { letter } = await inquirer.prompt({
@@ -147,7 +204,7 @@ wheelService.subscribe(async (state) => {
     validate: input => {
       if (input.length != 1) return 'Only one letter at a time!';
       if (guessedLetters.includes(input)) return 'Already guessed letter!';
-      if (['a', 'e', 'i', 'o', 'u'].includes(input) == false) return "Can't choose a consonant!";
+      if (!Utils.letterIsVowel(input)) return "Can't choose a consonant!";
 
       return true;
     }
@@ -156,12 +213,27 @@ wheelService.subscribe(async (state) => {
   wheelService.send('GUESS_LETTER', { letter });
 });
 
-wheelService.subscribe(async (state) => {
-  if (!state.matches('bankruptSpin')) return;
+sub('bankruptSpin', async state => {
   console.log(chalk.bgRed.whiteBright("BANKRUPT!"));
 });
 
-wheelService.subscribe(async (state) => {
-  if (!state.matches('loseTurnSpin')) return;
+sub('loseTurnSpin', async state => {
   console.log(chalk.bgWhiteBright.black("LOSE A TURN!!"));
+});
+
+sub('lettersInPuzzle', state => {
+  const lastGuess = state.context.guessedLetters.slice(-1)[0];
+  const count = Utils.getLettersInPuzzle(state.context.puzzle, lastGuess);
+  const amt = typeof state.context.spinAmount != 'number' ? 0 : count * state.context.spinAmount;
+
+  if (Utils.letterIsVowel(lastGuess)) {
+    console.log(`There's ${count} ${lastGuess.toUpperCase()}${count > 1 ? 's' : ''}.`);
+  } else {
+    console.log(`There's ${count} ${lastGuess.toUpperCase()}${count > 1 ? 's' : ''}, you got ${amt}!`);
+  }
+});
+
+sub('noLettersInPuzzle', state => {
+  const lastGuess = state.context.guessedLetters.slice(-1)[0].toUpperCase();
+  console.log(`There's no ${lastGuess} in the puzzle.`)
 });
