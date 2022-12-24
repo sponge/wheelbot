@@ -1,10 +1,7 @@
 import { createMachine } from 'xstate';
-import { puzzles } from './puzzles.js';
 
-const Utils = {
-  getLettersInPuzzle: (puzzle: string, letter: string): number => puzzle.match(new RegExp(letter, 'g'))?.length ?? 0,
-  letterIsVowel: (letter: string): boolean => ['a', 'e', 'i', 'o', 'u'].includes(letter),
-}
+import { puzzles } from './puzzles.js';
+import Utils from './util.js'
 
 interface Player {
   name: string,
@@ -37,7 +34,6 @@ const wheelValues: WheelValue[] = [
   500,
   900,
   'bankrupt',
-  5000
 ];
 
 interface WheelContext {

@@ -2,7 +2,8 @@ import { interpret } from 'xstate';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 
-import { wheelMachine, WheelContext, Utils } from './fsm.js';
+import { wheelMachine, WheelContext } from './fsm.js';
+import Utils from './util.js'
 
 /*
 import { puzzles } from './puzzles.js';
@@ -42,14 +43,14 @@ var puzzles = [];
 await 'asdf'
 
 for (var link of links) {
- 	var resp = await fetch(link);
+    var resp = await fetch(link);
   var text = await resp.text();
   var dom = parser.parseFromString(text, 'text/html');
   var arr = Array.from(dom.querySelector('#zone_2 table').rows)
     .filter(el => el.style.backgroundColor != 'rgb(59, 185, 255)')
     .slice(1)
     .map(el => { return { category: el.cells[1].innerText, puzzle: el.cells[0].innerText } })
-		.filter(puzzle => puzzle.category.length != 0 && puzzle.puzzle.length != 0);
+    .filter(puzzle => puzzle.category.length != 0 && puzzle.puzzle.length != 0);
   
   puzzles = puzzles.concat(arr);
 }
@@ -62,7 +63,8 @@ function printScores(context: WheelContext) {
   let str = '';
 
   for (let player of context.players) {
-    const c = i == 0 ? chalk.white.bgRed : i == 1 ? chalk.white.bgYellow : chalk.white.bgBlue;
+    let c = player == context.currentPlayer ? chalk.whiteBright.bold : chalk.white;
+    c = i == 0 ? c.bgRed : i == 1 ? c.bgYellow : c.bgBlue;
     str += c(`${player.name}: \$${player.score}`)
     str += ' ';
     i++;
@@ -72,18 +74,10 @@ function printScores(context: WheelContext) {
 }
 
 function printBoard(context: WheelContext) {
-  const letters = 'abcdefghijklmnopqrstuvwxyz';
-  const fullwidth = 'ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ';
-  let board = '';
-  for (let letter of context.puzzle) {
-    if (letter == ' ') board += '🟩';
-    else if (letters.includes(letter) == false) board += letter; // ampersands?
-    else if (context.guessedLetters.includes(letter)) board += fullwidth[letters.indexOf(letter)];
-    else board += '⬜';
-  }
-
-  console.log(context.category);
-  console.log(board);
+  let category = context.category;
+  let halfPad = 14 - category.length / 2;
+  console.log(' '.repeat(Math.floor(halfPad)) + context.category + ' '.repeat(Math.ceil(halfPad)));
+  console.log(Utils.getEmojiBoard(context.puzzle, context.guessedLetters));
 }
 
 function printUsedLetters(context: WheelContext) {
@@ -173,7 +167,13 @@ sub('playerTurn', async state => {
 });
 
 sub('spinWheel', state => {
-  console.log(`You spun $${state.context.spinAmount}`);
+  if (state.context.spinAmount == 'bankrupt') {
+    console.log(chalk.bgRed.whiteBright("BANKRUPT!"));
+  } else if (state.context.spinAmount == 'lose-a-turn') {
+    console.log(chalk.bgWhiteBright.black("LOSE A TURN!!"));
+  } else {
+    console.log(`You spun $${state.context.spinAmount}`);
+  }
 })
 
 sub('guessConsonent', async state => {
@@ -213,14 +213,6 @@ sub('guessVowel', async state => {
   wheelService.send('GUESS_LETTER', { letter });
 });
 
-sub('bankruptSpin', async state => {
-  console.log(chalk.bgRed.whiteBright("BANKRUPT!"));
-});
-
-sub('loseTurnSpin', async state => {
-  console.log(chalk.bgWhiteBright.black("LOSE A TURN!!"));
-});
-
 sub('lettersInPuzzle', state => {
   const lastGuess = state.context.guessedLetters.slice(-1)[0];
   const count = Utils.getLettersInPuzzle(state.context.puzzle, lastGuess);
@@ -229,7 +221,7 @@ sub('lettersInPuzzle', state => {
   if (Utils.letterIsVowel(lastGuess)) {
     console.log(`There's ${count} ${lastGuess.toUpperCase()}${count > 1 ? 's' : ''}.`);
   } else {
-    console.log(`There's ${count} ${lastGuess.toUpperCase()}${count > 1 ? 's' : ''}, you got ${amt}!`);
+    console.log(`There's ${count} ${lastGuess.toUpperCase()}${count > 1 ? 's' : ''}, you got $${amt}!`);
   }
 });
 
