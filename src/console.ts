@@ -2,7 +2,7 @@ import { interpret } from 'xstate';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 
-import { wheelMachine, WheelContext } from './fsm.js';
+import { createWheelMachine, WheelContext } from './fsm.js';
 import Utils from './util.js'
 
 /*
@@ -92,6 +92,7 @@ function printUsedLetters(context: WheelContext) {
   console.log(avail);
 }
 
+const wheelMachine = createWheelMachine();
 if (wheelMachine.options.delays) {
   wheelMachine.options.delays.PLAYER_IDLE_TIME = Math.pow(2, 32) / 2 - 1;
 }

@@ -1,9 +1,9 @@
 import { Awaitable, ButtonInteraction, CacheType, Message, ModalSubmitInteraction, SelectMenuInteraction, TextBasedChannel } from 'discord.js';
 import { interpret } from 'xstate';
-import { wheelMachine } from './fsm.js';
+import { createWheelMachine } from './fsm.js';
 
 // FIXME: dumb type hack
-const hackWheelService = interpret(wheelMachine);
+const hackWheelService = interpret(createWheelMachine());
 interface WheelGame {
   channel: TextBasedChannel;
   service: typeof hackWheelService;

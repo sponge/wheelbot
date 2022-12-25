@@ -4,7 +4,7 @@ import { interpret } from 'xstate';
 
 import Messages from './discord-messages.js';
 import { Interactions, StateHandler, WheelGame } from './discord-types.js';
-import { wheelMachine } from './fsm.js';
+import { createWheelMachine } from './fsm.js';
 
 dotenv.config();
 
@@ -24,12 +24,15 @@ client.on(Events.InteractionCreate, async interaction => {
       await interaction.reply({ content: "No game currently active in this channel", ephemeral: true });
       return;
     }
-    const game:WheelGame = games.get(interaction.channelId)!;
+    const game: WheelGame = games.get(interaction.channelId)!;
     game.service.stop();
     games.delete(interaction.channelId);
 
-    interaction.reply({ content: "Ending game."});
-  } else if (interaction.commandName != 'wheel') return;
+    await interaction.reply({ content: "Ending game." });
+    return;
+  }
+  
+  if (interaction.commandName != 'wheel') return;
 
   await interaction.guild?.channels.fetch();
 
@@ -44,7 +47,7 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 
   // we good, setup the game and save it to active games
-  const wheelService = interpret(wheelMachine)
+  const wheelService = interpret(createWheelMachine())
     .onTransition(state => interaction.channel?.send({ content: `New state: ${state.value}` }))
     .start();
 
