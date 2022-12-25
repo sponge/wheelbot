@@ -151,8 +151,8 @@ sub('playerTurn', async state => {
     message: `${currentPlayer?.name}, it's your turn:`,
     choices: () => {
       const choices = [];
-      choices.push({ name: 'Spin the wheel', value: 'SPIN_WHEEL' });
-      if (currentPlayer.score >= 250) choices.push({ name: 'Buy a vowel', value: 'BUY_VOWEL' });
+      if (state.context.canSpin) choices.push({ name: 'Spin the wheel', value: 'SPIN_WHEEL' });
+      if (state.context.canBuyVowel) choices.push({ name: 'Buy a vowel', value: 'BUY_VOWEL' });
       choices.push({ name: 'Solve the puzzle', value: 'SOLVE_PUZZLE' });
       return choices;
     },
@@ -235,6 +235,8 @@ sub('noLettersInPuzzle', state => {
 });
 
 sub('puzzleGuessCorrect', state => {
+  printScores(state.context);
+  console.log();
   printBoard(state.context, true);
   console.log('You got it!');
 });

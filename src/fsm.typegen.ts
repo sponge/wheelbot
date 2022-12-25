@@ -29,6 +29,7 @@
 "bankruptCurrentPlayer": "xstate.after(1000)#wheel.spinWheel";
 "buyVowel": "GUESS_LETTER";
 "cycleNextPlayer": "xstate.after(1000)#wheel.noLettersInPuzzle" | "xstate.after(1000)#wheel.puzzleGuessWrong" | "xstate.after(1000)#wheel.spinWheel" | "xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonent" | "xstate.after(PLAYER_IDLE_TIME)#wheel.guessVowel" | "xstate.after(PLAYER_IDLE_TIME)#wheel.playerTurn";
+"guaranteeMinimumWin": "" | "SOLVE_PUZZLE";
 "registerNewPlayer": "NEW_PLAYER";
 "spinWheel": "SPIN_WHEEL";
 "updateUsedLetters": "GUESS_LETTER";
@@ -49,6 +50,7 @@
 "notConsonantGuess": "GUESS_LETTER";
 "notVowelGuess": "GUESS_LETTER";
 "playerCanBuyVowel": "BUY_VOWEL";
+"playerCanSpin": "SPIN_WHEEL";
         };
         eventsCausingServices: {
           

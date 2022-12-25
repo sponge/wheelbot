@@ -1,6 +1,7 @@
 export default {
   countLettersInPuzzle: (puzzle: string, letter: string): number => puzzle.match(new RegExp(letter, 'g'))?.length ?? 0,
   letterIsVowel: (letter: string): boolean => 'aeiou'.includes(letter),
+  letterIsConsonant: (letter: string): boolean => 'bcdfghjklmnpqrstvwxyz'.includes(letter),
   isAnyLetter: (letter: string): boolean => 'abcdefghijklmnopqrstuvwxyz'.includes(letter),
 
   wordWrap: (sentence: string, maxLength: number): string[] => {
