@@ -145,7 +145,6 @@ export default {
         }
       }
 
-
       boardLine += '🟩'.repeat(Math.ceil(halfPad));
       if (lineLength == 12) boardLine += '⬛';
 

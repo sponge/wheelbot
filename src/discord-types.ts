@@ -15,7 +15,6 @@ interface StateHandler {
   buttonHandler?: (interaction: ButtonInteraction<CacheType>, game: WheelGame) => Awaitable<void>;
   modalHandler?: (interaction: ModalSubmitInteraction<CacheType>, game: WheelGame) => Awaitable<void>;
   selectHandler?: (interaction: SelectMenuInteraction<CacheType>, game: WheelGame) => Awaitable<void>;
-
 }
 
 enum Interactions {
