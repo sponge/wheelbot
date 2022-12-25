@@ -339,7 +339,7 @@ const wheelMachine =
       },
 
       delays: {
-        PLAYER_IDLE_TIME: 20000
+        PLAYER_IDLE_TIME: 45000
       }
     }
   );

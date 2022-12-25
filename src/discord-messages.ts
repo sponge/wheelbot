@@ -23,7 +23,12 @@ class Messages {
     const context = state.context;
 
     const board = Utils.getEmojiBoard(context.puzzle, context.guessedLetters);
-    const description = `\`\`\`${board}\`\`\`\n\n${statusText}`
+    let description = `${statusText}\n\n${board}\n\n`
+
+    for (let letter of 'abcdefghijklmnopqrstuvwxyz') {
+      description += context.guessedLetters.includes(letter) ? Utils.darkGray[letter] : Utils.gray[letter];
+      if (letter === 'm') description += '\n';
+    }
 
     const color = context.currentPlayerNum == 0 ? 0xCB3F49 : context.currentPlayerNum == 1 ? 0xF5CD6C : 0x6BAAE8;
 
@@ -39,7 +44,7 @@ class Messages {
 
     let components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] = [];
     if (state.matches('playerTurn')) components = ButtonPresets.PlayerTurn(game);
-    else if (state.matches('guessConsonant')) components = ButtonPresets.Letters(game);
+    else if (state.matches('guessConsonant')) components = ButtonPresets.LettersSelect(game);
     else if (state.matches('guessVowel')) components = ButtonPresets.Vowels(game);
 
     return { embeds: [embed], components };

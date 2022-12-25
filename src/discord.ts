@@ -1,4 +1,4 @@
-import { ActionRowBuilder, Client, EmbedBuilder, Events, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { ActionRowBuilder, Client, Events, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 import * as dotenv from 'dotenv';
 import { interpret } from 'xstate';
 
@@ -18,7 +18,18 @@ client.once(Events.ClientReady, c => {
 // handle the /wheel interaction and setup a new game
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isCommand()) return;
-  if (interaction.commandName != 'wheel') return;
+
+  if (interaction.commandName == 'stopwheel') {
+    if (!games.has(interaction.channelId)) {
+      await interaction.reply({ content: "No game currently active in this channel", ephemeral: true });
+      return;
+    }
+    const game:WheelGame = games.get(interaction.channelId)!;
+    game.service.stop();
+    games.delete(interaction.channelId);
+
+    interaction.reply({ content: "Ending game."});
+  } else if (interaction.commandName != 'wheel') return;
 
   await interaction.guild?.channels.fetch();
 
@@ -64,6 +75,8 @@ client.on(Events.InteractionCreate, interaction => {
     stateHandlers[state.value as string]?.buttonHandler?.(interaction, game);
   } else if (interaction.isModalSubmit()) {
     stateHandlers[state.value as string]?.modalHandler?.(interaction, game);
+  } else if (interaction.isStringSelectMenu()) {
+    stateHandlers[state.value as string]?.selectHandler?.(interaction, game);
   }
 });
 
@@ -145,9 +158,9 @@ const stateHandlers: { [key: string]: StateHandler } = {
       game.currentMessage?.edit(Messages.PlayerTurnMessage(game, `${context.currentPlayer.name}, select a letter.`));
     },
 
-    buttonHandler(interaction, game) {
+    selectHandler(interaction, game) {
       // FIXME: check if correct player, send ephemeral message to wait their turn
-      game.service.send('GUESS_LETTER', { letter: interaction.customId })
+      game.service.send('GUESS_LETTER', { letter: interaction.values[0] })
       interaction.update(Messages.PlayerTurnMessage(game, 'FIXME'));
     }
   },

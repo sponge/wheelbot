@@ -6,7 +6,9 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const commands = [
-	new SlashCommandBuilder().setName('wheel').setDescription('Starts a game of Wheel of Fortune'),
+	new SlashCommandBuilder().setName('wheel').setDescription('Starts a game of Wheel of Fortune.'),
+	new SlashCommandBuilder().setName('stopwheel').setDescription('Ends the game prematurely.'),
+
 ]
 	.map(command => command.toJSON());
 

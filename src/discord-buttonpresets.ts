@@ -43,23 +43,24 @@ class ButtonPresets {
     return [row];
   }
 
-  // public static LettersSelect(game: WheelGame) {
-  //   const context = game.service.getSnapshot().context;
+  public static LettersSelect(game: WheelGame) {
+    const context = game.service.getSnapshot().context;
 
-  //   const options = [];
-  //   for (let letter of 'bcdfghjklmnpqrstvwxyz') {
-  //     options.push({ label: letter, value: letter });
-  //   }
+    const options = [];
+    for (let letter of 'bcdfghjklmnpqrstvwxyz') {
+      if (context.guessedLetters.includes(letter)) continue;
+      options.push({ label: letter, value: letter });
+    }
 
-  //   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-  //     new StringSelectMenuBuilder()
-  //       .setCustomId('guess')
-  //       .setPlaceholder('Select a letter!')
-  //       .addOptions(options)
-  //   );
+    const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('guess')
+        .setPlaceholder('Select a letter!')
+        .addOptions(options)
+    );
 
-  //   return [row];
-  // }
+    return [row];
+  }
 
   public static Letters(game: WheelGame) {
     const context = game.service.getSnapshot().context;

@@ -1,4 +1,4 @@
-import { Awaitable, ButtonInteraction, CacheType, Message, ModalSubmitInteraction, TextBasedChannel } from 'discord.js';
+import { Awaitable, ButtonInteraction, CacheType, Message, ModalSubmitInteraction, SelectMenuInteraction, TextBasedChannel } from 'discord.js';
 import { interpret } from 'xstate';
 import { wheelMachine } from './fsm.js';
 
@@ -14,6 +14,8 @@ interface StateHandler {
   onTransition?: (state: typeof hackWheelService.initialState, game: WheelGame) => void;
   buttonHandler?: (interaction: ButtonInteraction<CacheType>, game: WheelGame) => Awaitable<void>;
   modalHandler?: (interaction: ModalSubmitInteraction<CacheType>, game: WheelGame) => Awaitable<void>;
+  selectHandler?: (interaction: SelectMenuInteraction<CacheType>, game: WheelGame) => Awaitable<void>;
+
 }
 
 enum Interactions {
