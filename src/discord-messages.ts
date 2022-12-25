@@ -9,12 +9,14 @@ class Messages {
   public static JoinMessage(game: WheelGame): BaseMessageOptions {
     // FIXME: show current players signed up with colors, nicer formatting
     const state = game.service.getSnapshot();
+    const context = state.context;
 
-    if (!state.matches('waiting')) {
-      return { content: "Let's get ready to play!", components: [] };
-    }
+    let content = state.matches('waiting') ? 'Join up and get ready to play!\n' : "Starting match, get ready!\n";
+    if (state.matches('waiting') || context.players[0]) content += `:red_circle: ${context.players[0]?.name ?? 'Join Now!'}\n`;
+    if (state.matches('waiting') || context.players[1]) content += `:yellow_circle: ${context.players[1]?.name ?? 'Join Now!'}\n`;
+    if (state.matches('waiting') || context.players[2]) content += `:blue_circle: ${context.players[2]?.name ?? 'Join Now!'}\n`;
 
-    return { content: 'Join up and get ready to play!', components: ButtonPresets.PreGame(game) }
+    return { content, components: state.matches('waiting') ? ButtonPresets.PreGame(game) : [] }
   }
 
   // main scoreboard message, action buttons are dynamic based on context
@@ -37,9 +39,11 @@ class Messages {
       .setColor(color)
       .setDescription(description)
 
+    let num = 0;
     for (let player of context.players) {
-      const emoji = context.currentPlayerNum == 0 ? ':red_circle:' : context.currentPlayerNum == 1 ? ':yellow_circle:' : ':blue_circle:';
+      const emoji = num == 0 ? ':red_circle:' : num == 1 ? ':yellow_circle:' : ':blue_circle:';
       embed.addFields({ name: `${emoji} ${player.name}`, value: `$${player.score}`, inline: true });
+      num++;
     }
 
     let components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] = [];
