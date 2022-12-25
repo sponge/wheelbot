@@ -8,7 +8,6 @@ dotenv.config();
 
 // FIXME: dumb type hack
 const hackWheelService = interpret(wheelMachine);
-
 interface WheelGame {
   channel: TextBasedChannel;
   service: typeof hackWheelService;
@@ -19,7 +18,6 @@ interface StateHandler {
   onTransition?: (state: typeof hackWheelService.initialState, game: WheelGame) => void;
   interactionHandler?: (interaction: ButtonInteraction<CacheType>, game: WheelGame) => Awaitable<void>;
   modalHandler?: (interaction: ModalSubmitInteraction<CacheType>, game: WheelGame) => Awaitable<void>;
-
 }
 
 enum Interactions {
@@ -37,13 +35,9 @@ function simpleEmbed(title: string, description: string, color?: number) {
     .setDescription(description);
 }
 
-class Messages {
-  public static joinMessage(game: WheelGame): BaseMessageOptions {
-    const components: ActionRowBuilder<ButtonBuilder>[] = [];
-
-    if (!game.service.getSnapshot().matches('waiting')) {
-      return { content: "Let's get ready to play!", components: [] };
-    }
+class ButtonPresets {
+  public static PreGame(game: WheelGame) {
+    const state = game.service.getSnapshot();
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
@@ -54,17 +48,14 @@ class Messages {
         .setCustomId(Interactions.StartGame)
         .setLabel('Start Game!')
         .setStyle(ButtonStyle.Primary)
-        .setDisabled(game.service.getSnapshot().context.players.length == 0),
+        .setDisabled(state.context.players.length == 0),
     );
 
-    return { content: 'Join up and get ready to play!', components: [row] }
+    return [row];
   }
 
-  public static PlayerTurnMessage(game: WheelGame, statusText: string): BaseMessageOptions {
+  public static PlayerTurn(game: WheelGame) {
     const context = game.service.getSnapshot().context;
-
-    const board = Utils.getEmojiBoard(context.puzzle, context.guessedLetters);
-    const description = `${board}\n\n${statusText}`
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
@@ -83,6 +74,67 @@ class Messages {
         .setStyle(ButtonStyle.Secondary),
     );
 
+    return [row];
+  }
+
+  public static Letters(game: WheelGame) {
+    const context = game.service.getSnapshot().context;
+
+    const components = [];
+    for (let letter of 'bcdfghjklmnpqrstvwxyz') {
+      components.push(new ButtonBuilder()
+        .setCustomId(letter)
+        .setLabel(letter.toUpperCase())
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(context.guessedLetters.includes(letter))
+      );
+    }
+
+    return [
+      components.slice(0, 4),
+      components.slice(5, 9),
+      components.slice(10, 14),
+      components.slice(15, 20),
+      components.slice(21, 25),
+    ];
+  }
+
+  public static Vowels(game: WheelGame) {
+    const context = game.service.getSnapshot().context;
+
+    const components = [];
+    for (let letter of 'aeiou') {
+      components.push(new ButtonBuilder()
+        .setCustomId(letter)
+        .setLabel(letter.toUpperCase())
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(context.guessedLetters.includes(letter))
+      );
+    }
+
+    return components;
+  }
+}
+
+class Messages {
+  public static JoinMessage(game: WheelGame): BaseMessageOptions {
+    // FIXME: show current players signed up with colors, nicer formatting
+    const state = game.service.getSnapshot();
+
+    if (!state.matches('waiting')) {
+      return { content: "Let's get ready to play!", components: [] };
+    }
+
+    return { content: 'Join up and get ready to play!', components: ButtonPresets.PreGame(game) }
+  }
+
+  public static PlayerTurnMessage(game: WheelGame, statusText: string): BaseMessageOptions {
+    const state = game.service.getSnapshot();
+    const context = state.context;
+
+    const board = Utils.getEmojiBoard(context.puzzle, context.guessedLetters);
+    const description = `\`\`\`${board}\`\`\`\n\n${statusText}`
+
     const color = context.currentPlayerNum == 0 ? 0xCB3F49 : context.currentPlayerNum == 1 ? 0xF5CD6C : 0x6BAAE8;
 
     const embed = new EmbedBuilder()
@@ -95,7 +147,12 @@ class Messages {
       embed.addFields({ name: `${emoji} ${player.name}`, value: `$${player.score}`, inline: true });
     }
 
-    return { embeds: [embed], components: [row] };
+    let components = [];
+    if (state.matches('playerTurn')) components = ButtonPresets.PlayerTurn(game);
+    else if (state.matches('guessConsonant')) components = ButtonPresets.Letters(game);
+    else if (state.matches('guessVowel')) components = ButtonPresets.Vowels(game);
+
+    return { embeds: [embed], components: ButtonPresets.PlayerTurn(game) };
   }
 
 }
@@ -142,7 +199,7 @@ client.on(Events.InteractionCreate, async interaction => {
     stateHandlers[state.value as string]?.onTransition?.(state, game);
   });
 
-  interaction.reply(Messages.joinMessage(game));
+  interaction.reply(Messages.JoinMessage(game));
 });
 
 // setup discord button handler dispatcher
@@ -175,7 +232,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
           break;
       }
 
-      interaction.update(Messages.joinMessage(game));
+      interaction.update(Messages.JoinMessage(game));
     }
   },
 
@@ -192,8 +249,9 @@ const stateHandlers: { [key: string]: StateHandler } = {
 
     modalHandler: async (interaction, game) => {
       // FIXME: check if correct player, send ephemeral message to wait their turn
+
       const guess = interaction.fields.getTextInputValue('solve-input')
-      game.service.send('SOLVE_PUZZLE', {guess})
+      game.service.send('SOLVE_PUZZLE', { guess })
       await interaction.reply({ content: 'Your submission was received successfully!' });
     },
 
@@ -201,6 +259,14 @@ const stateHandlers: { [key: string]: StateHandler } = {
       // FIXME: check if correct player, send ephemeral message to wait their turn
 
       switch (interaction.customId) {
+        case Interactions.SpinWheel:
+          game.service.send('SPIN_WHEEL');
+          break;
+
+        case Interactions.BuyVowel:
+          game.service.send('BUY_VOWEL');
+          break;
+
         case Interactions.SolvePuzzle:
           // Create the modal
           const modal = new ModalBuilder()
@@ -216,9 +282,34 @@ const stateHandlers: { [key: string]: StateHandler } = {
           const row = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(solveInput);
           modal.addComponents(row);
           await interaction.showModal(modal);
+          break;
       }
     }
-  }
+  },
+
+  guessConsonant: {
+    onTransition: async (state, game) => {
+      const context = game.service.getSnapshot().context;
+      game.currentMessage = await game.channel.send(Messages.PlayerTurnMessage(game, `${context.currentPlayer.name}, select a letter.`));
+    },
+
+    interactionHandler(interaction, game) {
+      // FIXME: check if correct player, send ephemeral message to wait their turn
+
+    }
+  },
+
+  guessVowel: {
+    onTransition: async (state, game) => {
+      const context = game.service.getSnapshot().context;
+      game.currentMessage = await game.channel.send(Messages.PlayerTurnMessage(game, `${context.currentPlayer.name}, buy a vowel.`));
+    },
+
+    interactionHandler(interaction, game) {
+      // FIXME: check if correct player, send ephemeral message to wait their turn
+
+    }
+  },
 
 };
 

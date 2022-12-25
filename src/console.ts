@@ -180,13 +180,13 @@ sub('spinWheel', state => {
   }
 })
 
-sub('guessConsonent', async state => {
+sub('guessConsonant', async state => {
   const { currentPlayer, guessedLetters } = state.context;
 
   const { letter } = await inquirer.prompt({
     type: 'input',
     name: 'letter',
-    message: `${currentPlayer?.name}, choose a consonent:`,
+    message: `${currentPlayer?.name}, choose a Consonant:`,
     validate: input => {
       if (input.length != 1) return 'Only one letter at a time!';
       if (guessedLetters.includes(input)) return 'Already guessed letter!';

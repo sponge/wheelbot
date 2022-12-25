@@ -120,7 +120,7 @@ const spinWheel = {
     1000: [
       { cond: 'isSpinBankrupt', actions: ['bankruptCurrentPlayer'], target: 'nextPlayerTurn' },
       { cond: 'isSpinLoseATurn', target: 'nextPlayerTurn' },
-      { target: 'guessConsonent' }
+      { target: 'guessConsonant' }
     ]
   }
 }
@@ -147,10 +147,10 @@ const puzzleGuessWrong = {
   }
 };
 
-const guessConsonent = {
+const guessConsonant = {
   on: {
     GUESS_LETTER: [
-      { cond: 'notConsonantGuess', target: 'guessConsonent' },
+      { cond: 'notConsonantGuess', target: 'guessConsonant' },
       { cond: 'letterInPuzzle', actions: ['updateUsedLetters', 'addScore'], target: 'lettersInPuzzle' },
       { cond: 'letterNotInPuzzle', actions: ['updateUsedLetters'], target: 'noLettersInPuzzle', },
     ]
@@ -221,7 +221,7 @@ const wheelMachine =
         playerTurn,
         nextPlayerTurn,
         spinWheel,
-        guessConsonent,
+        guessConsonant,
         guessVowel,
         puzzleGuessCorrect,
         puzzleGuessWrong,

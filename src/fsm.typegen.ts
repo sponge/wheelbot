@@ -10,7 +10,7 @@
 "xstate.after(1000)#wheel.puzzleGuessCorrect": { type: "xstate.after(1000)#wheel.puzzleGuessCorrect" };
 "xstate.after(1000)#wheel.puzzleGuessWrong": { type: "xstate.after(1000)#wheel.puzzleGuessWrong" };
 "xstate.after(1000)#wheel.spinWheel": { type: "xstate.after(1000)#wheel.spinWheel" };
-"xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonent": { type: "xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonent" };
+"xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonant": { type: "xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonant" };
 "xstate.after(PLAYER_IDLE_TIME)#wheel.guessVowel": { type: "xstate.after(PLAYER_IDLE_TIME)#wheel.guessVowel" };
 "xstate.after(PLAYER_IDLE_TIME)#wheel.playerTurn": { type: "xstate.after(PLAYER_IDLE_TIME)#wheel.playerTurn" };
 "xstate.init": { type: "xstate.init" };
@@ -28,7 +28,7 @@
           "addScore": "GUESS_LETTER";
 "bankruptCurrentPlayer": "xstate.after(1000)#wheel.spinWheel";
 "buyVowel": "GUESS_LETTER";
-"cycleNextPlayer": "xstate.after(1000)#wheel.noLettersInPuzzle" | "xstate.after(1000)#wheel.puzzleGuessWrong" | "xstate.after(1000)#wheel.spinWheel" | "xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonent" | "xstate.after(PLAYER_IDLE_TIME)#wheel.guessVowel" | "xstate.after(PLAYER_IDLE_TIME)#wheel.playerTurn";
+"cycleNextPlayer": "xstate.after(1000)#wheel.noLettersInPuzzle" | "xstate.after(1000)#wheel.puzzleGuessWrong" | "xstate.after(1000)#wheel.spinWheel" | "xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonant" | "xstate.after(PLAYER_IDLE_TIME)#wheel.guessVowel" | "xstate.after(PLAYER_IDLE_TIME)#wheel.playerTurn";
 "guaranteeMinimumWin": "" | "SOLVE_PUZZLE";
 "registerNewPlayer": "NEW_PLAYER";
 "spinWheel": "SPIN_WHEEL";
@@ -55,7 +55,7 @@
         eventsCausingServices: {
           
         };
-        matchesStates: "gameOver" | "guessConsonent" | "guessVowel" | "lettersInPuzzle" | "nextPlayerTurn" | "noLettersInPuzzle" | "playerTurn" | "puzzleGuessCorrect" | "puzzleGuessWrong" | "spinWheel" | "startGame" | "waiting";
+        matchesStates: "gameOver" | "guessConsonant" | "guessVowel" | "lettersInPuzzle" | "nextPlayerTurn" | "noLettersInPuzzle" | "playerTurn" | "puzzleGuessCorrect" | "puzzleGuessWrong" | "spinWheel" | "startGame" | "waiting";
         tags: never;
       }
   
