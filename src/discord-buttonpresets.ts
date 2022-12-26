@@ -49,7 +49,7 @@ class ButtonPresets {
     const options = [];
     for (let letter of 'bcdfghjklmnpqrstvwxyz') {
       if (context.guessedLetters.includes(letter)) continue;
-      options.push({ label: letter, value: letter });
+      options.push({ label: letter.toUpperCase(), value: letter });
     }
 
     const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(

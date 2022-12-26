@@ -119,7 +119,6 @@ export default {
     }
 
     // FIXME: left align all lines if can't exactly center?
-    // if last halfpad and current halfpad are 1 away, flip floor/ceil?
     for (let line of lines) {
       let boardLine = '';
       const lineLength = board.length == 0 || board.length == 3 ? 12 : 14

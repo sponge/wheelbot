@@ -8,6 +8,7 @@ interface WheelGame {
   channel: TextBasedChannel;
   service: typeof hackWheelService;
   currentMessage: Message | null,
+  lastGuess: string,
 }
 
 interface StateHandler {

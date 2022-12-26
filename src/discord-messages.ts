@@ -4,6 +4,8 @@ import ButtonPresets from './discord-buttonpresets.js';
 import { WheelGame } from './discord-types.js';
 import { Utils } from './fsm.js';
 
+type MessageComponents = ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[];
+
 class Messages {
   // waiting for players and join/start buttons
   public static JoinMessage(game: WheelGame): BaseMessageOptions {
@@ -19,8 +21,28 @@ class Messages {
     return { content, components: state.matches('waiting') ? ButtonPresets.PreGame(game) : [] }
   }
 
-  // main scoreboard message, action buttons are dynamic based on context
-  public static PlayerTurnMessage(game: WheelGame, statusText: string): BaseMessageOptions {
+  public static GameOver(game: WheelGame) {
+    const state = game.service.getSnapshot();
+    const context = state.context;
+
+    const board = Utils.getEmojiBoard(context.puzzle);
+    const emoji = context.currentPlayerNum == 0 ? ':red_circle:' : context.currentPlayerNum == 1 ? ':yellow_circle:' : ':blue_circle:';
+    let description = `${emoji} ${context.currentPlayer.name} has won **$${context.currentPlayer.score}**!\n\n`;
+    description += '🎆🎇🎆🎇🎆🎇🎆🎇🎆🎇🎆🎇🎆🎇\n';
+    description += `${board}\n`;
+    description += '🎇🎆🎇🎆🎇🎆🎇🎆🎇🎆🎇🎆🎇🎆\n';
+
+    const color = context.currentPlayerNum == 0 ? 0xCB3F49 : context.currentPlayerNum == 1 ? 0xF5CD6C : 0x6BAAE8;
+    const embed = new EmbedBuilder()
+      .setTitle(context.category)
+      .setColor(color)
+      .setDescription(description);
+
+    return { embeds: [embed] };
+  }
+
+  // main scoreboard message
+  public static PuzzleBoard(game: WheelGame, statusText: string, components: MessageComponents): BaseMessageOptions {
     const state = game.service.getSnapshot();
     const context = state.context;
 
@@ -45,11 +67,6 @@ class Messages {
       embed.addFields({ name: `${emoji} ${player.name}`, value: `$${player.score}`, inline: true });
       num++;
     }
-
-    let components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] = [];
-    if (state.matches('playerTurn')) components = ButtonPresets.PlayerTurn(game);
-    else if (state.matches('guessConsonant')) components = ButtonPresets.LettersSelect(game);
-    else if (state.matches('guessVowel')) components = ButtonPresets.Vowels(game);
 
     return { embeds: [embed], components };
   }
