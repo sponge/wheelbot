@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonStyle, Client, Events, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { ActionRowBuilder, ButtonInteraction, ButtonStyle, Client, CommandInteraction, Events, ModalActionRowComponentBuilder, ModalBuilder, ModalSubmitInteraction, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle } from 'discord.js';
 import * as dotenv from 'dotenv';
 import { interpret } from 'xstate';
 import ButtonPresets from './discord-buttonpresets.js';
@@ -23,6 +23,17 @@ function stopGame(id: string) {
   const game: WheelGame = games.get(id)!;
   game.service.stop();
   games.delete(id);
+}
+
+function isCurrentPlayerInteracting(interaction: ModalSubmitInteraction | ButtonInteraction | CommandInteraction | StringSelectMenuInteraction, game: WheelGame) {
+  const context = game.service.getSnapshot().context;
+
+  if (interaction.user.toString() != context.currentPlayer.id) {
+    interaction.reply({ content: "Chill out, it's not your turn", ephemeral: true })
+    return false;
+  }
+
+  return true;
 }
 
 client.on(Events.InteractionCreate, async interaction => {
@@ -103,7 +114,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
       switch (interaction.customId) {
         case Interactions.JoinGame:
           // FIXME: check player uniqueness
-          game.service.send('NEW_PLAYER', { playerName: interaction.user.username, id: interaction.user });
+          game.service.send('NEW_PLAYER', { playerName: interaction.user.username, id: interaction.user.toString() });
           break;
 
         case Interactions.StartGame:
@@ -126,7 +137,6 @@ const stateHandlers: { [key: string]: StateHandler } = {
   playerTurn: {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
-      console.log(context.puzzle);
 
       const status = `${context.currentPlayer.name}, it's your turn!\n`;
       const msg = Messages.PuzzleBoard(game, status, ButtonPresets.PlayerTurn(game));
@@ -145,7 +155,9 @@ const stateHandlers: { [key: string]: StateHandler } = {
     },
 
     modalHandler: async (interaction, game) => {
-      // FIXME: check if correct player, send ephemeral message to wait their turn
+      if (!isCurrentPlayerInteracting(interaction, game)) {
+        return;
+      }
 
       const guess = interaction.fields.getTextInputValue('solve-input');
       game.lastGuess = guess;
@@ -156,7 +168,11 @@ const stateHandlers: { [key: string]: StateHandler } = {
     },
 
     buttonHandler: async (interaction, game) => {
-      // FIXME: check if correct player, send ephemeral message to wait their turn
+      const context = game.service.getSnapshot().context;
+
+      if (!isCurrentPlayerInteracting(interaction, game)) {
+        return;
+      }
 
       switch (interaction.customId) {
         case Interactions.SpinWheel:
@@ -174,7 +190,6 @@ const stateHandlers: { [key: string]: StateHandler } = {
             .setCustomId('solve-modal')
             .setTitle('Solve Puzzle');
 
-          const context = game.service.getSnapshot().context;
           let placeholder = Array.from(context.puzzle).map(
             letter => !Utils.isAnyLetter(letter) || context.guessedLetters.includes(letter) ? letter : '_'
           ).join('');
@@ -199,7 +214,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
       let status: string, buttonStatus: string;
-      let buttonStyle:ButtonStyle;
+      let buttonStyle: ButtonStyle;
       if (context.spinAmount == 'bankrupt') {
         status = `💸 **BANKRUPT!**\n`;
         buttonStatus = `💸 BANKRUPT!`;
@@ -231,7 +246,9 @@ const stateHandlers: { [key: string]: StateHandler } = {
         return false;
       }
 
-      // FIXME: check if correct player, send ephemeral message to wait their turn
+      if (!isCurrentPlayerInteracting(interaction, game)) {
+        return true;
+      }
 
       // FIXME: why doesn't getString work? stupid typescript?
       const letter: string = interaction.options.get('letter')?.value?.toString() ?? '';
@@ -241,7 +258,10 @@ const stateHandlers: { [key: string]: StateHandler } = {
     },
 
     selectHandler(interaction, game) {
-      // FIXME: check if correct player, send ephemeral message to wait their turn
+      if (!isCurrentPlayerInteracting(interaction, game)) {
+        return;
+      }
+
       game.service.send('GUESS_LETTER', { letter: interaction.values[0] })
       interaction.deferUpdate();
     }
@@ -259,7 +279,9 @@ const stateHandlers: { [key: string]: StateHandler } = {
         return false;
       }
 
-      // FIXME: check if correct player, send ephemeral message to wait their turn
+      if (!isCurrentPlayerInteracting(interaction, game)) {
+        return true;
+      }
 
       // FIXME: why doesn't getString work? stupid typescript?
       const letter: string = interaction.options.get('letter')?.value?.toString() ?? '';
@@ -269,7 +291,10 @@ const stateHandlers: { [key: string]: StateHandler } = {
     },
 
     buttonHandler(interaction, game) {
-      // FIXME: check if correct player, send ephemeral message to wait their turn
+      if (!isCurrentPlayerInteracting(interaction, game)) {
+        return;
+      }
+
       game.service.send('GUESS_LETTER', { letter: interaction.customId })
       interaction.deferUpdate();
     }
