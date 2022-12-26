@@ -5,11 +5,11 @@
         '@@xstate/typegen': true;
         internalEvents: {
           "": { type: "" };
-"xstate.after(1000)#wheel.lettersInPuzzle": { type: "xstate.after(1000)#wheel.lettersInPuzzle" };
-"xstate.after(1000)#wheel.noLettersInPuzzle": { type: "xstate.after(1000)#wheel.noLettersInPuzzle" };
 "xstate.after(1000)#wheel.puzzleGuessCorrect": { type: "xstate.after(1000)#wheel.puzzleGuessCorrect" };
 "xstate.after(1000)#wheel.puzzleGuessWrong": { type: "xstate.after(1000)#wheel.puzzleGuessWrong" };
-"xstate.after(1000)#wheel.spinWheel": { type: "xstate.after(1000)#wheel.spinWheel" };
+"xstate.after(3000)#wheel.lettersInPuzzle": { type: "xstate.after(3000)#wheel.lettersInPuzzle" };
+"xstate.after(3000)#wheel.noLettersInPuzzle": { type: "xstate.after(3000)#wheel.noLettersInPuzzle" };
+"xstate.after(3000)#wheel.spinWheel": { type: "xstate.after(3000)#wheel.spinWheel" };
 "xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonant": { type: "xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonant" };
 "xstate.after(PLAYER_IDLE_TIME)#wheel.guessVowel": { type: "xstate.after(PLAYER_IDLE_TIME)#wheel.guessVowel" };
 "xstate.after(PLAYER_IDLE_TIME)#wheel.playerTurn": { type: "xstate.after(PLAYER_IDLE_TIME)#wheel.playerTurn" };
@@ -26,16 +26,16 @@
         };
         eventsCausingActions: {
           "addScore": "GUESS_LETTER";
-"bankruptCurrentPlayer": "xstate.after(1000)#wheel.spinWheel";
+"bankruptCurrentPlayer": "xstate.after(3000)#wheel.spinWheel";
 "buyVowel": "GUESS_LETTER";
-"cycleNextPlayer": "xstate.after(1000)#wheel.noLettersInPuzzle" | "xstate.after(1000)#wheel.puzzleGuessWrong" | "xstate.after(1000)#wheel.spinWheel" | "xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonant" | "xstate.after(PLAYER_IDLE_TIME)#wheel.guessVowel" | "xstate.after(PLAYER_IDLE_TIME)#wheel.playerTurn";
+"cycleNextPlayer": "xstate.after(1000)#wheel.puzzleGuessWrong" | "xstate.after(3000)#wheel.noLettersInPuzzle" | "xstate.after(3000)#wheel.spinWheel" | "xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonant" | "xstate.after(PLAYER_IDLE_TIME)#wheel.guessVowel" | "xstate.after(PLAYER_IDLE_TIME)#wheel.playerTurn";
 "guaranteeMinimumWin": "" | "SOLVE_PUZZLE";
 "registerNewPlayer": "NEW_PLAYER";
 "spinWheel": "SPIN_WHEEL";
 "updateUsedLetters": "GUESS_LETTER";
         };
         eventsCausingDelays: {
-          "PLAYER_IDLE_TIME": "" | "BUY_VOWEL" | "GUESS_LETTER" | "xstate.after(1000)#wheel.lettersInPuzzle" | "xstate.after(1000)#wheel.spinWheel";
+          "PLAYER_IDLE_TIME": "" | "BUY_VOWEL" | "GUESS_LETTER" | "xstate.after(3000)#wheel.lettersInPuzzle" | "xstate.after(3000)#wheel.spinWheel";
         };
         eventsCausingGuards: {
           "hasAnyPlayers": "START_GAME";
@@ -43,8 +43,8 @@
 "isPuzzleGuessCorrect": "SOLVE_PUZZLE";
 "isPuzzleGuessWrong": "SOLVE_PUZZLE";
 "isPuzzleSolved": "";
-"isSpinBankrupt": "xstate.after(1000)#wheel.spinWheel";
-"isSpinLoseATurn": "xstate.after(1000)#wheel.spinWheel";
+"isSpinBankrupt": "xstate.after(3000)#wheel.spinWheel";
+"isSpinLoseATurn": "xstate.after(3000)#wheel.spinWheel";
 "letterInPuzzle": "GUESS_LETTER";
 "letterNotInPuzzle": "GUESS_LETTER";
 "notConsonantGuess": "GUESS_LETTER";

@@ -1,4 +1,4 @@
-import { ActionRowBuilder, Client, Events, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { ActionRowBuilder, ButtonStyle, Client, Events, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 import * as dotenv from 'dotenv';
 import { interpret } from 'xstate';
 import ButtonPresets from './discord-buttonpresets.js';
@@ -54,7 +54,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
     // setup dispatcher for this game's fsm changes
     wheelService.subscribe(async state => {
-      if (stateHandlers[state.value as string] ) {
+      if (stateHandlers[state.value as string]) {
         stateHandlers[state.value as string].onTransition?.(state, game);
       } else {
         interaction.channel?.send({ content: `Unhandled state change: ${state.value}` });
@@ -64,19 +64,19 @@ client.on(Events.InteractionCreate, async interaction => {
     interaction.reply(Messages.JoinMessage(game));
     return;
 
-  // handle ending the game
+    // handle ending the game
   } else if (interaction.isCommand() && interaction.commandName == 'stopwheel') {
     if (!games.has(interaction.channelId)) {
       await interaction.reply({ content: "No game currently active in this channel", ephemeral: true });
       return;
     }
-    
+
     stopGame(interaction.channelId);
     await interaction.reply({ content: "Ending game." });
 
     return;
 
-  // if game is active in the channel, pass it off to a handler
+    // if game is active in the channel, pass it off to a handler
   } else if (interaction.channelId && games.has(interaction.channelId)) {
     const game: WheelGame = games.get(interaction.channelId)!;
     const state = game.service.getSnapshot();
@@ -103,7 +103,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
       switch (interaction.customId) {
         case Interactions.JoinGame:
           // FIXME: check player uniqueness
-          game.service.send('NEW_PLAYER', { playerName: interaction.user });
+          game.service.send('NEW_PLAYER', { playerName: interaction.user.username, id: interaction.user });
           break;
 
         case Interactions.StartGame:
@@ -125,7 +125,9 @@ const stateHandlers: { [key: string]: StateHandler } = {
       }
 
       const status = `${context.currentPlayer.name}, it's your turn!`;
-      game.currentMessage = await game.channel.send(Messages.PuzzleBoard(game, status, ButtonPresets.PlayerTurn(game)));
+      const msg = Messages.PuzzleBoard(game, status, ButtonPresets.PlayerTurn(game));
+      msg.content = `${context.currentPlayer.id}`;
+      game.currentMessage = await game.channel.send(msg);
     },
 
     commandHandler(interaction, game) {
@@ -167,7 +169,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
           let placeholder = Array.from(context.puzzle).map(
             letter => !Utils.isAnyLetter(letter) || context.guessedLetters.includes(letter) ? letter : '_'
           ).join('');
-          
+
           const solveInput = new TextInputBuilder()
             .setCustomId('solve-input')
             .setLabel(placeholder)
@@ -187,16 +189,23 @@ const stateHandlers: { [key: string]: StateHandler } = {
   spinWheel: {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
-      let status:string = '';
+      let status: string, buttonStatus: string;
+      let buttonStyle:ButtonStyle;
       if (context.spinAmount == 'bankrupt') {
-        status = `:money_with_wings: **BANKRUPT!**`
+        status = `💸 **BANKRUPT!**`;
+        buttonStatus = `💸 BANKRUPT!`;
+        buttonStyle = ButtonStyle.Danger;
       } else if (context.spinAmount == 'lose-a-turn') {
-        status = `:no_entry_sign: **LOSE A TURN!**`
+        status = `🚫 **LOSE A TURN!**`;
+        buttonStatus = `🚫 LOSE A TURN!`;
+        buttonStyle = ButtonStyle.Danger;
       } else {
-        status = `:dollar: You spun **$${context.spinAmount}**.\n`;
+        status = `💵 You spun **$${context.spinAmount}**.\n`;
+        buttonStatus = `💵 You spun $${context.spinAmount}.\n`;
+        buttonStyle = ButtonStyle.Success;
       }
 
-      game.currentMessage?.edit(Messages.PuzzleBoard(game, status, []));
+      game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.DisabledButton(buttonStatus, buttonStyle)));
     }
   },
 
@@ -225,6 +234,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
     selectHandler(interaction, game) {
       // FIXME: check if correct player, send ephemeral message to wait their turn
       game.service.send('GUESS_LETTER', { letter: interaction.values[0] })
+      interaction.deferUpdate();
     }
   },
 
@@ -252,6 +262,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
     buttonHandler(interaction, game) {
       // FIXME: check if correct player, send ephemeral message to wait their turn
       game.service.send('GUESS_LETTER', { letter: interaction.customId })
+      interaction.deferUpdate();
     }
   },
 
@@ -263,18 +274,20 @@ const stateHandlers: { [key: string]: StateHandler } = {
       const count = Utils.countLettersInPuzzle(context.puzzle, letter);
       const cash = count * (context.spinAmount as number);
 
-      let status; 
+      let status: string, buttonStatus: string;
       if (count == 1) {
-        status = `:white_check_mark: There is **${count} ${letter.toUpperCase()}** in there!`;
+        status = `✅ There is **${count} ${letter.toUpperCase()}** in there!`;
+        buttonStatus = `✅ There is ${count} ${letter.toUpperCase()} in there!`;
       } else {
-        status = `:white_check_mark: There are **${count} ${letter.toUpperCase()}**s in there!`;
+        status = `✅ There are **${count} ${letter.toUpperCase()}**s in there!`;
+        buttonStatus = `✅ There are ${count} ${letter.toUpperCase()}s in there!`;
       }
 
       if (!Utils.letterIsVowel(letter)) {
         status += `\n:dollar: You got **$${cash}**`;
       }
-      
-      game.currentMessage?.edit(Messages.PuzzleBoard(game, status, []));
+
+      game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.DisabledButton(buttonStatus, ButtonStyle.Success)));
     }
   },
 
@@ -282,8 +295,9 @@ const stateHandlers: { [key: string]: StateHandler } = {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
       const letter = context.guessedLetters.slice(-1)[0].toUpperCase();
-      let status = `:x: Sorry, there is no **${letter}**.`;
-      game.currentMessage?.edit(Messages.PuzzleBoard(game, status, []));
+      let status = `❌ Sorry, there is no **${letter}**.`;
+      let ButtonStatus = `❌ Sorry, there is no ${letter}.`;
+      game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.DisabledButton(ButtonStatus, ButtonStyle.Danger)));
     }
   },
 
@@ -292,7 +306,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
       const context = game.service.getSnapshot().context;
       game.currentMessage?.edit(Messages.GameOver(game));
       stopGame(game.channel.id);
-    }    
+    }
   },
 
   puzzleGuessCorrect: {

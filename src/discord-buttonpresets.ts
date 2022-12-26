@@ -101,6 +101,18 @@ class ButtonPresets {
 
     return [components];
   }
+
+  public static DisabledButton(text: string, style: ButtonStyle = ButtonStyle.Secondary) {
+    const components = new ActionRowBuilder<ButtonBuilder>();
+    components.addComponents(new ButtonBuilder()
+      .setCustomId('null')
+      .setLabel(text)
+      .setStyle(style)
+      .setDisabled(true)
+    );
+
+    return [components];
+  }
 }
 
 export default ButtonPresets;

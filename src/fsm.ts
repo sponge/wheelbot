@@ -4,8 +4,9 @@ import { puzzles } from './puzzles.js';
 import Utils from './util.js'
 
 interface Player {
+  id: string,
   name: string,
-  score: number
+  score: number,
 }
 
 type WheelValue = string | number;
@@ -117,7 +118,7 @@ const playerTurn = {
 const spinWheel = {
   entry: 'spinWheel',
   after: {
-    1000: [
+    3000: [
       { cond: 'isSpinBankrupt', actions: ['bankruptCurrentPlayer'], target: 'nextPlayerTurn' },
       { cond: 'isSpinLoseATurn', target: 'nextPlayerTurn' },
       { target: 'guessConsonant' }
@@ -177,13 +178,13 @@ const guessVowel = {
 
 const lettersInPuzzle = {
   after: {
-    1000: 'playerTurn'
+    3000: 'playerTurn'
   }
 };
 
 const noLettersInPuzzle = {
   after: {
-    1000: 'nextPlayerTurn'
+    3000: 'nextPlayerTurn'
   }
 };
 
@@ -195,7 +196,7 @@ function createWheelMachine() {
       schema: {
         context: {} as WheelContext,
         events: {} as
-          | { type: 'NEW_PLAYER'; playerName: string }
+          | { type: 'NEW_PLAYER'; playerName: string, id?: string }
           | { type: 'START_GAME' }
           | { type: 'SPIN_WHEEL' }
           | { type: 'BUY_VOWEL' }
@@ -207,7 +208,7 @@ function createWheelMachine() {
       context: {
         players: [],
         currentPlayerNum: 0,
-        currentPlayer: { name: '', score: 0 },
+        currentPlayer: { name: '', score: 0, id: '' },
         category: '',
         puzzle: '',
         guessedLetters: [],
@@ -301,7 +302,7 @@ function createWheelMachine() {
 
       actions: {
         registerNewPlayer: (context: WheelContext, event) => {
-          context.players.push({ name: event.playerName, score: 0 });
+          context.players.push({ name: event.playerName, score: 0, id: event.id ?? event.playerName });
         },
 
         cycleNextPlayer: (context: WheelContext, event) => {
