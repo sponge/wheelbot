@@ -38,7 +38,7 @@ class Messages {
       .setColor(color)
       .setDescription(description);
 
-    return { embeds: [embed] };
+    return { embeds: [embed], components: [] };
   }
 
   // main scoreboard message
