@@ -222,7 +222,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
       let status = `:dollar: You spun **$${context.spinAmount}**.\n`;
-      status += `${context.currentPlayer.name}, select a consonant.`;
+      status += `❔ ${context.currentPlayer.name}, select a consonant.`;
       game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.LettersSelect(game)));
     },
 
@@ -250,7 +250,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
   guessVowel: {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
-      const status = `${context.currentPlayer.name}, buy a vowel.`;
+      const status = `❔ ${context.currentPlayer.name}, buy a vowel.\n`;
       game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.Vowels(game)));
     },
 
@@ -285,15 +285,15 @@ const stateHandlers: { [key: string]: StateHandler } = {
 
       let status: string, buttonStatus: string;
       if (count == 1) {
-        status = `✅ There is **${count} ${letter.toUpperCase()}** in there!`;
+        status = `✅ There is **${count} ${letter.toUpperCase()}** in there!\n`;
         buttonStatus = `✅ There is ${count} ${letter.toUpperCase()} in there!`;
       } else {
-        status = `✅ There are **${count} ${letter.toUpperCase()}**s in there!`;
+        status = `✅ There are **${count} ${letter.toUpperCase()}**s in there!\n`;
         buttonStatus = `✅ There are ${count} ${letter.toUpperCase()}s in there!`;
       }
 
       if (!Utils.letterIsVowel(letter)) {
-        status += `\n:dollar: You got **$${cash}**`;
+        status += `:dollar: You got **$${cash}**`;
       }
 
       game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.DisabledButton(buttonStatus, ButtonStyle.Success)));
@@ -304,7 +304,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
       const letter = context.guessedLetters.slice(-1)[0].toUpperCase();
-      let status = `❌ Sorry, there is no **${letter}**.`;
+      let status = `❌ Sorry, there is no **${letter}**.\n`;
       let ButtonStatus = `❌ Sorry, there is no ${letter}.`;
       game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.DisabledButton(ButtonStatus, ButtonStyle.Danger)));
     }
@@ -324,7 +324,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
 
   puzzleGuessWrong: {
     onTransition: async (state, game) => {
-      let status = `:x: Sorry, "**${game.lastGuess}**" is not correct.`;
+      let status = `:x: Sorry, "**${game.lastGuess}**" is not correct.\n`;
       game.currentMessage?.edit(Messages.PuzzleBoard(game, status, []));
     }
   },
