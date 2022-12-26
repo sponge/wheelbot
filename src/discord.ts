@@ -115,19 +115,28 @@ const stateHandlers: { [key: string]: StateHandler } = {
     }
   },
 
+  nextPlayerTurn: {
+    onTransition(state, game) {
+      // new player, new message
+      game.currentMessage?.edit({ components: [] });
+      game.currentMessage = null;
+    },
+  },
+
   playerTurn: {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
       console.log(context.puzzle);
 
-      if (game.currentMessage) {
-        game.currentMessage.edit({ components: [] });
-      }
-
-      const status = `${context.currentPlayer.name}, it's your turn!`;
+      const status = `${context.currentPlayer.name}, it's your turn!\n`;
       const msg = Messages.PuzzleBoard(game, status, ButtonPresets.PlayerTurn(game));
       msg.content = `${context.currentPlayer.id}`;
-      game.currentMessage = await game.channel.send(msg);
+
+      if (game.currentMessage) {
+        game.currentMessage = await game.currentMessage.edit(msg);
+      } else {
+        game.currentMessage = await game.channel.send(msg);
+      }
     },
 
     commandHandler(interaction, game) {
@@ -192,11 +201,11 @@ const stateHandlers: { [key: string]: StateHandler } = {
       let status: string, buttonStatus: string;
       let buttonStyle:ButtonStyle;
       if (context.spinAmount == 'bankrupt') {
-        status = `💸 **BANKRUPT!**`;
+        status = `💸 **BANKRUPT!**\n`;
         buttonStatus = `💸 BANKRUPT!`;
         buttonStyle = ButtonStyle.Danger;
       } else if (context.spinAmount == 'lose-a-turn') {
-        status = `🚫 **LOSE A TURN!**`;
+        status = `🚫 **LOSE A TURN!**\n`;
         buttonStatus = `🚫 LOSE A TURN!`;
         buttonStyle = ButtonStyle.Danger;
       } else {

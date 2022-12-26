@@ -118,7 +118,7 @@ const playerTurn = {
 const spinWheel = {
   entry: 'spinWheel',
   after: {
-    3000: [
+    READ_TIME: [
       { cond: 'isSpinBankrupt', actions: ['bankruptCurrentPlayer'], target: 'nextPlayerTurn' },
       { cond: 'isSpinLoseATurn', target: 'nextPlayerTurn' },
       { target: 'guessConsonant' }
@@ -128,13 +128,15 @@ const spinWheel = {
 
 const nextPlayerTurn = {
   entry: ['cycleNextPlayer'],
-  always: 'playerTurn'
+  after: {
+    50: 'playerTurn'
+  }
 };
 
 const puzzleGuessCorrect = {
   entry: ['guaranteeMinimumWin'],
   after: {
-    1000: 'gameOver'
+    READ_TIME: 'gameOver'
   }
 };
 
@@ -144,7 +146,7 @@ const gameOver = {
 
 const puzzleGuessWrong = {
   after: {
-    1000: 'nextPlayerTurn'
+    READ_TIME: 'nextPlayerTurn'
   }
 };
 
@@ -172,19 +174,19 @@ const guessVowel = {
   },
 
   after: {
-    PLAYER_IDLE_TIME: 'nextPlayerTurn'
+    PLAYER_IDLE_TIME: 'nextPlayerTurn',
   }
 };
 
 const lettersInPuzzle = {
   after: {
-    3000: 'playerTurn'
+    READ_TIME: 'playerTurn'
   }
 };
 
 const noLettersInPuzzle = {
   after: {
-    3000: 'nextPlayerTurn'
+    READ_TIME: 'nextPlayerTurn'
   }
 };
 
@@ -340,7 +342,8 @@ function createWheelMachine() {
       },
 
       delays: {
-        PLAYER_IDLE_TIME: 45000
+        PLAYER_IDLE_TIME: 45000,
+        READ_TIME: 3000,
       }
     }
   );
