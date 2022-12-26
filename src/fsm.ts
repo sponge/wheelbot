@@ -136,7 +136,7 @@ const nextPlayerTurn = {
 const puzzleGuessCorrect = {
   entry: ['guaranteeMinimumWin'],
   after: {
-    READ_TIME: 'gameOver'
+    50: 'gameOver'
   }
 };
 
