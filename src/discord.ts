@@ -30,8 +30,8 @@ client.on(Events.InteractionCreate, async interaction => {
     await interaction.reply({ content: "Ending game." });
     return;
 
-  // if game is active in the channel, pass it off to a handler
-  } else if (interaction.channelId && games.has(interaction.channelId)) {    
+    // if game is active in the channel, pass it off to a handler
+  } else if (interaction.channelId && games.has(interaction.channelId)) {
     const game: WheelGame = games.get(interaction.channelId)!;
     const state = game.service.getSnapshot();
 
@@ -47,7 +47,8 @@ client.on(Events.InteractionCreate, async interaction => {
         interaction.reply({ content: 'Command not valid', ephemeral: true })
       }
     }
-  // else handle pre-game commands
+
+    // else handle pre-game commands
   } else {
     if (!interaction.isCommand()) return;
     switch (interaction.commandName) {
