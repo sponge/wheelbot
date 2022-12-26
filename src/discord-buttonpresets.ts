@@ -55,7 +55,7 @@ class ButtonPresets {
     const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
       new StringSelectMenuBuilder()
         .setCustomId('guess')
-        .setPlaceholder('Select a letter!')
+        .setPlaceholder('Select a letter, or use /guess')
         .addOptions(options)
     );
 

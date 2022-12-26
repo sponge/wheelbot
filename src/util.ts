@@ -132,7 +132,7 @@ export default {
       if (process.env.DISCORD_TOKEN) {
         for (let letter of line) {
           if (letter == ' ') boardLine += '🟩';
-          else if (letters.includes(letter) == false) boardLine += letter; // - & ? ' . ! :
+          else if (letters.includes(letter) == false) boardLine += '`' + letter + ' `'; // - & ? ' . ! :
           else if (!guessedLetters || guessedLetters.includes(letter)) boardLine += gray[letter];
           else boardLine += '⬜';
         }

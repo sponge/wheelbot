@@ -17,9 +17,8 @@ client.once(Events.ClientReady, c => {
 
 // handle the /wheel interaction and setup a new game
 client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isCommand()) return;
-
-  if (interaction.commandName == 'stopwheel') {
+  // handle stopwheel up here since it should override commands from a specific state
+  if (interaction.isCommand() && interaction.commandName == 'stopwheel') {
     if (!games.has(interaction.channelId)) {
       await interaction.reply({ content: "No game currently active in this channel", ephemeral: true });
       return;
@@ -30,56 +29,66 @@ client.on(Events.InteractionCreate, async interaction => {
 
     await interaction.reply({ content: "Ending game." });
     return;
-  }
-  
-  if (interaction.commandName != 'wheel') return;
 
-  await interaction.guild?.channels.fetch();
+  // if game is active in the channel, pass it off to a handler
+  } else if (interaction.channelId && games.has(interaction.channelId)) {    
+    const game: WheelGame = games.get(interaction.channelId)!;
+    const state = game.service.getSnapshot();
 
-  if (games.has(interaction.channelId)) {
-    await interaction.reply({ content: "A game is already active in this channel.", ephemeral: true });
-    return;
-  }
+    if (interaction.isButton()) {
+      stateHandlers[state.value as string]?.buttonHandler?.(interaction, game);
+    } else if (interaction.isModalSubmit()) {
+      stateHandlers[state.value as string]?.modalHandler?.(interaction, game);
+    } else if (interaction.isStringSelectMenu()) {
+      stateHandlers[state.value as string]?.selectHandler?.(interaction, game);
+    } else if (interaction.isCommand()) {
+      const handled: boolean = stateHandlers[state.value as string]?.commandHandler?.(interaction, game) ?? false;
+      if (!handled) {
+        interaction.reply({ content: 'Command not valid', ephemeral: true })
+      }
+    }
+  // else handle pre-game commands
+  } else {
+    if (!interaction.isCommand()) return;
+    switch (interaction.commandName) {
+      case 'wheel': {
+        await interaction.guild?.channels.fetch();
 
-  if (interaction.channel == null) {
-    await interaction.reply({ content: "Can't start a game here, sorry!", ephemeral: true });
-    return;
-  }
+        if (games.has(interaction.channelId)) {
+          await interaction.reply({ content: "A game is already active in this channel.", ephemeral: true });
+          return;
+        }
 
-  // we good, setup the game and save it to active games
-  const wheelService = interpret(createWheelMachine())
-    .onTransition(state => interaction.channel?.send({ content: `New state: ${state.value}` }))
-    .start();
+        if (interaction.channel == null) {
+          await interaction.reply({ content: "Can't start a game here, sorry!", ephemeral: true });
+          return;
+        }
 
-  const game: WheelGame = {
-    channel: interaction.channel,
-    service: wheelService,
-    currentMessage: null
-  }
-  games.set(interaction.channelId, game);
+        // we good, setup the game and save it to active games
+        const wheelService = interpret(createWheelMachine())
+          .onTransition(state => interaction.channel?.send({ content: `New state: ${state.value}` }))
+          .start();
 
-  // setup dispatcher for this game's fsm changes
-  wheelService.subscribe(async state => {
-    stateHandlers[state.value as string]?.onTransition?.(state, game);
-  });
+        const game: WheelGame = {
+          channel: interaction.channel,
+          service: wheelService,
+          currentMessage: null
+        }
+        games.set(interaction.channelId, game);
 
-  interaction.reply(Messages.JoinMessage(game));
-});
+        // setup dispatcher for this game's fsm changes
+        wheelService.subscribe(async state => {
+          stateHandlers[state.value as string]?.onTransition?.(state, game);
+        });
 
-// setup discord button handler dispatcher
-client.on(Events.InteractionCreate, interaction => {
-  if (!interaction || !interaction.channelId) return;
-  if (!games.has(interaction.channelId)) return;
+        interaction.reply(Messages.JoinMessage(game));
+        return;
+      }
 
-  const game: WheelGame = games.get(interaction.channelId)!;
-  const state = game.service.getSnapshot();
-
-  if (interaction.isButton()) {
-    stateHandlers[state.value as string]?.buttonHandler?.(interaction, game);
-  } else if (interaction.isModalSubmit()) {
-    stateHandlers[state.value as string]?.modalHandler?.(interaction, game);
-  } else if (interaction.isStringSelectMenu()) {
-    stateHandlers[state.value as string]?.selectHandler?.(interaction, game);
+      default:
+        interaction.reply({ content: 'Command not valid', ephemeral: true })
+        return;
+    }
   }
 });
 
@@ -161,6 +170,20 @@ const stateHandlers: { [key: string]: StateHandler } = {
       game.currentMessage?.edit(Messages.PlayerTurnMessage(game, `${context.currentPlayer.name}, select a letter.`));
     },
 
+    commandHandler(interaction, game) {
+      if (interaction.commandName != 'guess') {
+        return false;
+      }
+
+      // FIXME: check if correct player, send ephemeral message to wait their turn
+
+      // FIXME: why doesn't getString work? stupid typescript?
+      const letter: string = interaction.options.get('letter')?.value?.toString() ?? '';
+      game.service.send('GUESS_LETTER', { letter });
+      interaction.reply({ content: 'Guessed letter.', ephemeral: true });
+      return true;
+    },
+
     selectHandler(interaction, game) {
       // FIXME: check if correct player, send ephemeral message to wait their turn
       game.service.send('GUESS_LETTER', { letter: interaction.values[0] })
@@ -172,6 +195,20 @@ const stateHandlers: { [key: string]: StateHandler } = {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
       game.currentMessage?.edit(Messages.PlayerTurnMessage(game, `${context.currentPlayer.name}, buy a vowel.`));
+    },
+
+    commandHandler(interaction, game) {
+      if (interaction.commandName != 'guess') {
+        return false;
+      }
+
+      // FIXME: check if correct player, send ephemeral message to wait their turn
+
+      // FIXME: why doesn't getString work? stupid typescript?
+      const letter: string = interaction.options.get('letter')?.value?.toString() ?? '';
+      game.service.send('GUESS_LETTER', { letter });
+      interaction.reply({ content: 'Guessed letter.', ephemeral: true });
+      return true;
     },
 
     buttonHandler(interaction, game) {
