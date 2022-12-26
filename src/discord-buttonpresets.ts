@@ -27,11 +27,11 @@ class ButtonPresets {
       new ButtonBuilder()
         .setCustomId(Interactions.SpinWheel)
         .setLabel('Spin')
-        .setStyle(ButtonStyle.Secondary)
+        .setStyle(ButtonStyle.Primary)
         .setDisabled(!context.canSpin),
       new ButtonBuilder()
         .setCustomId(Interactions.BuyVowel)
-        .setLabel('Buy a Vowel')
+        .setLabel('Buy a Vowel (-$250)')
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(!context.canBuyVowel),
       new ButtonBuilder()
