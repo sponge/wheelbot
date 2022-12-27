@@ -27,4 +27,16 @@ enum Interactions {
   SolvePuzzle = 'solve-puzzle',
 }
 
-export { WheelGame, StateHandler, Interactions };
+const PlayerColors = [
+  0xCB3F49,
+  0xF5CD6C,
+  0x6BAAE8
+];
+
+const PlayerEmoji = [
+  '🔴',
+  '🟡',
+  '🔵'
+];
+
+export { WheelGame, StateHandler, Interactions, PlayerColors, PlayerEmoji };

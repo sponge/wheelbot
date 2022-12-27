@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonInteraction, ButtonStyle, Client, CommandInteraction, Events, GatewayIntentBits, GuildChannel, ModalActionRowComponentBuilder, ModalBuilder, ModalSubmitInteraction, StringSelectMenuInteraction, TextChannel, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { ActionRowBuilder, ButtonInteraction, ButtonStyle, Client, CommandInteraction, Events, GatewayIntentBits, GuildChannel, ModalActionRowComponentBuilder, ModalBuilder, ModalSubmitInteraction, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle } from 'discord.js';
 import * as dotenv from 'dotenv';
 import { interpret } from 'xstate';
 import ButtonPresets from './discord-buttonpresets.js';
@@ -79,7 +79,7 @@ client.on(Events.InteractionCreate, async interaction => {
     interaction.reply(Messages.JoinMessage(game));
     return;
 
-  // handle ending the game
+    // handle ending the game
   } else if (interaction.isCommand() && interaction.commandName == 'stopwheel') {
     if (!games.has(interaction.channelId)) {
       await interaction.reply({ content: "No game currently active in this channel", ephemeral: true });
@@ -94,11 +94,11 @@ client.on(Events.InteractionCreate, async interaction => {
   } else if (interaction.isCommand() && interaction.commandName == 'wheelstats') {
     // FIXME: dumb typescript hack, why?
     const members = (interaction.channel as GuildChannel).members;
-    await interaction.reply( { embeds: [await Stats.statsMessage(client, members)] });
+    await interaction.reply({ embeds: [await Stats.statsMessage(client, members)] });
 
     return;
-  
-  // if game is active in the channel, pass it off to a handler
+
+    // if game is active in the channel, pass it off to a handler
   } else if (interaction.channelId && games.has(interaction.channelId)) {
     const game: WheelGame = games.get(interaction.channelId)!;
     const state = game.service.getSnapshot();
@@ -124,7 +124,6 @@ const stateHandlers: { [key: string]: StateHandler } = {
     buttonHandler: (interaction, game) => {
       switch (interaction.customId) {
         case Interactions.JoinGame:
-          // FIXME: check player uniqueness
           if (process.env.ENVIRONMENT != 'development') {
             const context = game.service.getSnapshot().context;
             if (context.players.some(player => interaction.user.id == player.id)) {
@@ -144,15 +143,15 @@ const stateHandlers: { [key: string]: StateHandler } = {
     }
   },
 
+  playerAFK: {
+    onTransition(state, game) {
+      const status = `🪦 ${state.context.currentPlayer.name} was AFK, skipping turn.\n`;
+      game.currentMessage?.edit(Messages.PuzzleBoard(game, status, []));
+    },
+  },
+
   nextPlayerTurn: {
     onTransition(state, game) {
-      // detect idle timeout
-      // FIXME: currentPlayer is already changed, so the border color updates incorrectly
-      if (state.history?.value == 'playerTurn') {
-        const status = `🪦 ${state.context.currentPlayer.name} was AFK, skipping turn.\n`;
-        game.currentMessage?.edit(Messages.PuzzleBoard(game, status, []));
-      }
-
       // new player, new message
       game.currentMessage?.edit({ components: [] });
       game.currentMessage = null;
@@ -170,7 +169,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
 
       const status = `⏳ ${context.currentPlayer.name}, it's your turn!\n`;
       const msg = Messages.PuzzleBoard(game, status, ButtonPresets.PlayerTurn(game));
-      msg.content = `${client.users.cache.get(context.currentPlayer.id)}`;
+      msg.content = `${client.users.cache.get(context.currentPlayer.id)}, it's your turn!`;
 
       if (game.currentMessage) {
         game.currentMessage = await game.currentMessage.edit(msg);

@@ -6,6 +6,7 @@
         internalEvents: {
           "": { type: "" };
 "xstate.after(50)#wheel.nextPlayerTurn": { type: "xstate.after(50)#wheel.nextPlayerTurn" };
+"xstate.after(50)#wheel.playerAFK": { type: "xstate.after(50)#wheel.playerAFK" };
 "xstate.after(50)#wheel.puzzleGuessCorrect": { type: "xstate.after(50)#wheel.puzzleGuessCorrect" };
 "xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonant": { type: "xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonant" };
 "xstate.after(PLAYER_IDLE_TIME)#wheel.guessVowel": { type: "xstate.after(PLAYER_IDLE_TIME)#wheel.guessVowel" };
@@ -29,7 +30,7 @@
           "addScore": "GUESS_LETTER";
 "bankruptCurrentPlayer": "xstate.after(READ_TIME)#wheel.spinWheel";
 "buyVowel": "GUESS_LETTER";
-"cycleNextPlayer": "xstate.after(PLAYER_IDLE_TIME)#wheel.guessConsonant" | "xstate.after(PLAYER_IDLE_TIME)#wheel.guessVowel" | "xstate.after(PLAYER_IDLE_TIME)#wheel.playerTurn" | "xstate.after(READ_TIME)#wheel.noLettersInPuzzle" | "xstate.after(READ_TIME)#wheel.puzzleGuessWrong" | "xstate.after(READ_TIME)#wheel.spinWheel";
+"cycleNextPlayer": "xstate.after(50)#wheel.playerAFK" | "xstate.after(READ_TIME)#wheel.noLettersInPuzzle" | "xstate.after(READ_TIME)#wheel.puzzleGuessWrong" | "xstate.after(READ_TIME)#wheel.spinWheel";
 "guaranteeMinimumWin": "" | "SOLVE_PUZZLE";
 "registerNewPlayer": "NEW_PLAYER";
 "spinWheel": "SPIN_WHEEL";
@@ -57,7 +58,7 @@
         eventsCausingServices: {
           
         };
-        matchesStates: "gameOver" | "guessConsonant" | "guessVowel" | "lettersInPuzzle" | "nextPlayerTurn" | "noLettersInPuzzle" | "playerTurn" | "puzzleGuessCorrect" | "puzzleGuessWrong" | "spinWheel" | "startGame" | "waiting";
+        matchesStates: "gameOver" | "guessConsonant" | "guessVowel" | "lettersInPuzzle" | "nextPlayerTurn" | "noLettersInPuzzle" | "playerAFK" | "playerTurn" | "puzzleGuessCorrect" | "puzzleGuessWrong" | "spinWheel" | "startGame" | "waiting";
         tags: never;
       }
   
