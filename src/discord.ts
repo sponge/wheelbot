@@ -15,6 +15,8 @@ const client = new Client({ intents: [GatewayIntentBits.GuildMembers, GatewayInt
 const games: Map<string, WheelGame> = new Map();
 await Stats.loadStats();
 
+// FIXME: exception handling kills the process, should just end the game instead
+
 client.once(Events.ClientReady, c => {
   console.log(`Ready! Logged in as ${c.user.tag}`);
 });
@@ -123,6 +125,13 @@ const stateHandlers: { [key: string]: StateHandler } = {
       switch (interaction.customId) {
         case Interactions.JoinGame:
           // FIXME: check player uniqueness
+          if (process.env.ENVIRONMENT != 'development') {
+            const context = game.service.getSnapshot().context;
+            if (context.players.some(player => interaction.user.id == player.id)) {
+              interaction.reply({ content: "You're already signed up to play!", ephemeral: true });
+              return;
+            }
+          }
           game.service.send('NEW_PLAYER', { playerName: interaction.user.username, id: interaction.user.id });
           break;
 
@@ -137,6 +146,13 @@ const stateHandlers: { [key: string]: StateHandler } = {
 
   nextPlayerTurn: {
     onTransition(state, game) {
+      // detect idle timeout
+      // FIXME: currentPlayer is already changed, so the border color updates incorrectly
+      if (state.history?.value == 'playerTurn') {
+        const status = `🪦 ${state.context.currentPlayer.name} was AFK, skipping turn.\n`;
+        game.currentMessage?.edit(Messages.PuzzleBoard(game, status, []));
+      }
+
       // new player, new message
       game.currentMessage?.edit({ components: [] });
       game.currentMessage = null;
@@ -147,12 +163,14 @@ const stateHandlers: { [key: string]: StateHandler } = {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
 
-      // sneaky lil cheatsy
-      // console.log(context.puzzle);
+      if (process.env.ENVIRONMENT == 'development') {
+        // sneaky lil cheatsy
+        console.log(context.puzzle);
+      }
 
-      const status = `❕ ${context.currentPlayer.name}, it's your turn!\n`;
+      const status = `⏳ ${context.currentPlayer.name}, it's your turn!\n`;
       const msg = Messages.PuzzleBoard(game, status, ButtonPresets.PlayerTurn(game));
-      msg.content = `${context.currentPlayer.id}`;
+      msg.content = `${client.users.cache.get(context.currentPlayer.id)}`;
 
       if (game.currentMessage) {
         game.currentMessage = await game.currentMessage.edit(msg);
@@ -261,7 +279,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
       let status = `:dollar: You spun **$${context.spinAmount}**.\n`;
-      status += `❔ ${context.currentPlayer.name}, select a consonant.`;
+      status += `⏳ ${context.currentPlayer.name}, select a consonant.`;
       game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.LettersSelect(game)));
     },
 
@@ -294,7 +312,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
   guessVowel: {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
-      const status = `❔ ${context.currentPlayer.name}, buy a vowel.\n`;
+      const status = `⏳ ${context.currentPlayer.name}, buy a vowel.\n`;
       game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.Vowels(game)));
     },
 
