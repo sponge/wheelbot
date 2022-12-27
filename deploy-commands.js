@@ -22,12 +22,14 @@ const commands = [
         .setRequired(true)
         .setDescription('The puzzle solution, including punctuation.')
     ),
-
+  new SlashCommandBuilder().setName('wheelstats').setDescription('View the Wheel Hall of Fame.'),
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '9' }).setToken(process.env.DISCORD_TOKEN);
 
-await rest.put(
+const ret = await rest.put(
   Routes.applicationCommands(process.env.APPLICATION_ID),
   { body: commands },
 );
+
+console.log(ret);

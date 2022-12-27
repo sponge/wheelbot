@@ -9,7 +9,6 @@ type MessageComponents = ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilde
 class Messages {
   // waiting for players and join/start buttons
   public static JoinMessage(game: WheelGame): BaseMessageOptions {
-    // FIXME: show current players signed up with colors, nicer formatting
     const state = game.service.getSnapshot();
     const context = state.context;
 

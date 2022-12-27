@@ -1,17 +1,19 @@
-import { ActionRowBuilder, ButtonInteraction, ButtonStyle, Client, CommandInteraction, Events, ModalActionRowComponentBuilder, ModalBuilder, ModalSubmitInteraction, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { ActionRowBuilder, ButtonInteraction, ButtonStyle, Client, CommandInteraction, Events, GatewayIntentBits, GuildChannel, ModalActionRowComponentBuilder, ModalBuilder, ModalSubmitInteraction, StringSelectMenuInteraction, TextChannel, TextInputBuilder, TextInputStyle } from 'discord.js';
 import * as dotenv from 'dotenv';
 import { interpret } from 'xstate';
 import ButtonPresets from './discord-buttonpresets.js';
 
 import Messages from './discord-messages.js';
+import * as Stats from './discord-stats.js';
 import { Interactions, StateHandler, WheelGame } from './discord-types.js';
 import { createWheelMachine } from './fsm.js';
 import Utils from './util.js';
 
 dotenv.config();
 
-const client = new Client({ intents: [] });
+const client = new Client({ intents: [GatewayIntentBits.GuildMembers, GatewayIntentBits.Guilds] });
 const games: Map<string, WheelGame> = new Map();
+await Stats.loadStats();
 
 client.once(Events.ClientReady, c => {
   console.log(`Ready! Logged in as ${c.user.tag}`);
@@ -28,7 +30,7 @@ function stopGame(id: string) {
 function isCurrentPlayerInteracting(interaction: ModalSubmitInteraction | ButtonInteraction | CommandInteraction | StringSelectMenuInteraction, game: WheelGame) {
   const context = game.service.getSnapshot().context;
 
-  if (interaction.user.toString() != context.currentPlayer.id) {
+  if (interaction.user.id != context.currentPlayer.id) {
     interaction.reply({ content: "Chill out, it's not your turn", ephemeral: true })
     return false;
   }
@@ -75,7 +77,7 @@ client.on(Events.InteractionCreate, async interaction => {
     interaction.reply(Messages.JoinMessage(game));
     return;
 
-    // handle ending the game
+  // handle ending the game
   } else if (interaction.isCommand() && interaction.commandName == 'stopwheel') {
     if (!games.has(interaction.channelId)) {
       await interaction.reply({ content: "No game currently active in this channel", ephemeral: true });
@@ -87,7 +89,14 @@ client.on(Events.InteractionCreate, async interaction => {
 
     return;
 
-    // if game is active in the channel, pass it off to a handler
+  } else if (interaction.isCommand() && interaction.commandName == 'wheelstats') {
+    // FIXME: dumb typescript hack, why?
+    const members = (interaction.channel as GuildChannel).members;
+    await interaction.reply( { embeds: [await Stats.statsMessage(client, members)] });
+
+    return;
+  
+  // if game is active in the channel, pass it off to a handler
   } else if (interaction.channelId && games.has(interaction.channelId)) {
     const game: WheelGame = games.get(interaction.channelId)!;
     const state = game.service.getSnapshot();
@@ -114,7 +123,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
       switch (interaction.customId) {
         case Interactions.JoinGame:
           // FIXME: check player uniqueness
-          game.service.send('NEW_PLAYER', { playerName: interaction.user.username, id: interaction.user.toString() });
+          game.service.send('NEW_PLAYER', { playerName: interaction.user.username, id: interaction.user.id });
           break;
 
         case Interactions.StartGame:
@@ -138,7 +147,10 @@ const stateHandlers: { [key: string]: StateHandler } = {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
 
-      const status = `${context.currentPlayer.name}, it's your turn!\n`;
+      // sneaky lil cheatsy
+      // console.log(context.puzzle);
+
+      const status = `❕ ${context.currentPlayer.name}, it's your turn!\n`;
       const msg = Messages.PuzzleBoard(game, status, ButtonPresets.PlayerTurn(game));
       msg.content = `${context.currentPlayer.id}`;
 
@@ -150,8 +162,20 @@ const stateHandlers: { [key: string]: StateHandler } = {
     },
 
     commandHandler(interaction, game) {
-      // FIXME: implement /solve
-      return false;
+      if (interaction.commandName != 'solve') {
+        return false;
+      }
+
+      if (!isCurrentPlayerInteracting(interaction, game)) {
+        return true;
+      }
+
+      // FIXME: why doesn't getString work? stupid typescript?
+      const guess: string = interaction.options.get('guess')?.value?.toString() ?? '';
+      game.lastGuess = guess;
+      game.service.send('SOLVE_PUZZLE', { guess });
+      interaction.reply({ content: 'Puzzle solution sent.', ephemeral: true });
+      return true;
     },
 
     modalHandler: async (interaction, game) => {
@@ -321,6 +345,8 @@ const stateHandlers: { [key: string]: StateHandler } = {
         status += `:dollar: You got **$${cash}**`;
       }
 
+      Stats.updateLetterGuessStats(context.currentPlayer.id, true);
+
       game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.DisabledButton(buttonStatus, ButtonStyle.Success)));
     }
   },
@@ -331,6 +357,9 @@ const stateHandlers: { [key: string]: StateHandler } = {
       const letter = context.guessedLetters.slice(-1)[0].toUpperCase();
       let status = `❌ Sorry, there is no **${letter}**.\n`;
       let ButtonStatus = `❌ Sorry, there is no ${letter}.`;
+
+      Stats.updateLetterGuessStats(context.currentPlayer.id, false);
+
       game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.DisabledButton(ButtonStatus, ButtonStyle.Danger)));
     }
   },
@@ -340,6 +369,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
       const context = game.service.getSnapshot().context;
       game.currentMessage?.edit(Messages.GameOver(game));
       stopGame(game.channel.id);
+      Stats.endGameStats(context);
     }
   },
 
