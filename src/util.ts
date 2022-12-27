@@ -156,23 +156,32 @@ export default {
 
     const lines = this.wordWrap(puzzle);
 
+    // for left aligning, find the longest line
     const minPadding = Math.min(...lines.map(line => {
       const amt = (14 - line.length) / 2;
+      // if we only have room for one empty square on a line, force it to the left
       return amt == 0.5 ? 1 : Math.floor(amt);
     }));
+
+    // if one of the lines hits the edge, force it to the center to fix some edge cases
+    // where the minPadding is negative due to the first/last lines being 12 long instead of 14
     const isCenterAligned = minPadding == 0 || lines.every(line => line.length % 2 == 0);
 
     lines.forEach((line, i, lines) => {
       let boardLine = '';
+
+      // first and last lines are shorter due to non-square board
       const lineLength = i == 0 || i == 3 ? 12 : 14;
       let halfPad = (lineLength - line.length) / 2;
 
+      // add the first/last line border
       if (lineLength == 12) boardLine += '⬛️';
 
+      // figure out how many background tiles to render
       const left = minPadding - (lineLength == 12 ? 1 : 0);
       const leftActual = (isCenterAligned ? Math.floor(halfPad) : left);
       if (leftActual < 0) {
-        console.log(':(');
+        console.log(':('); // repeat is gonna bomb out
       }
       boardLine += '🟩'.repeat(leftActual);
 
@@ -194,13 +203,15 @@ export default {
         }
       }
 
+      // fill out the line with background tiles
       const right = lineLength - (left + line.length);
       const rightActual = isCenterAligned ? Math.ceil(halfPad) : right;
       if (rightActual < 0) {
-        console.log(':(');
+        console.log(':('); // repeat is gonna bomb out
       }
       boardLine += '🟩'.repeat(rightActual);
 
+      //if we're on the first/last line add the right border
       if (lineLength == 12) boardLine += '⬛️';
 
       board.push(boardLine);
