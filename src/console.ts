@@ -4,6 +4,8 @@ import chalk from 'chalk';
 
 import { createWheelMachine, WheelContext } from './fsm.js';
 import Utils from './util.js'
+import { puzzles } from './puzzles.js';
+
 
 /*
 import { puzzles } from './puzzles.js';
@@ -90,6 +92,62 @@ function printUsedLetters(context: WheelContext) {
   avail += '\n  ';
   avail += 'nopqrstuvwxyz'.split('').map(inner).join(' ');
   console.log(avail);
+}
+
+// some sanity checks and testing code on puzzles
+if (true) {
+  const tooLong = puzzles.map(p => Utils.wordWrap(p.puzzle))
+    .filter(p => p.length > 4);
+
+  if (tooLong.length) {
+    console.log('too long');
+    console.log(tooLong);
+    console.log('');
+  }
+
+  // individual lines are too long
+  const tooLongLines = puzzles.map(p => Utils.wordWrap(p.puzzle))
+    .filter(lines => lines[0].length > 12 || lines[1].length > 14 || lines[2].length > 14 || lines[3].length > 12);
+
+  if (tooLongLines.length) {
+    console.log('too long lines');
+    console.log(tooLongLines);
+    console.log('');
+  }
+
+  const problematic = [
+    "PAPER CUP",
+    "PHILADELPHIA EAGLES ARE SUPER BOWL CHAMPIONS",
+    "CLASSIC ITALIAN LASAGNA",
+    "WE'RE SENDING YOU TO FIJI",
+    "BLOWING OUT THE CANDLES ON A BIRTHDAY CAKE",
+    "OPEN INVITATION",
+    "MOBILE PHONE",
+    "DUMB IDIOTS",
+    "I THINK I CAN I THINK I CAN",
+    "MAJOR LEAGUE BASEBALL",
+    "WHERE WOULD WE BE WITHOUT YOU?",
+    "REQUESTING A LATE CHECKOUT",
+    "A STEEPLECHASE IS A RACE",
+    "RELAXING AND STRESS-FREE"
+  ];
+
+  for (let puzzle of problematic) {
+  // for (let { puzzle } of puzzles) {
+    const context: WheelContext = {
+      players: [],
+      currentPlayerNum: 0,
+      currentPlayer: { name: '', score: 0, id: '' },
+      category: "test puzzle",
+      puzzle: puzzle.toLowerCase(),
+      guessedLetters: [],
+      spinAmount: 0,
+      canBuyVowel: false,
+      canSpin: true,
+    };
+
+    printBoard(context, true);
+  }
 }
 
 const wheelMachine = createWheelMachine();

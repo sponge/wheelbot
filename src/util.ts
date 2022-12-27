@@ -65,43 +65,79 @@ export default {
   letterIsConsonant: (letter: string): boolean => 'bcdfghjklmnpqrstvwxyz'.includes(letter),
   isAnyLetter: (letter: string): boolean => 'abcdefghijklmnopqrstuvwxyz'.includes(letter),
 
-  wordWrap: (sentence: string, maxLength: number): string[] => {
+  wordWrap: (sentence: string): string[] => {
     // Initialize variables to store the current line and the remaining text
-    let line = "";
+    let line = '';
     let remaining = sentence;
 
     // Create an array to store the lines
-    let lines = [];
+    let lines: string[] = [];
+
+    // see if we can easily split the sentence in half
+    for (let idx = Math.floor(sentence.length * 0.3); idx <= Math.ceil(sentence.length * 0.7); idx++) {
+      if (sentence[idx] != ' ') continue;
+
+      const split = [sentence.substring(0, idx), sentence.substring(idx + 1)];
+      if (split.some(line => line.length > 14)) continue;
+      lines = split;
+      remaining = '';
+    }
 
     // Loop until there is no more text to process
     while (remaining.length > 0) {
       // Find the next word in the remaining text
-      let spaceIndex = remaining.indexOf(" ");
-      let nextWord;
-      if (spaceIndex === -1) {
-        // If there are no more spaces, the next word is the rest of the text
-        nextWord = remaining;
-        remaining = "";
-      } else {
-        // Otherwise, the next word is everything up to the next space
-        nextWord = remaining.substring(0, spaceIndex);
-        remaining = remaining.substring(spaceIndex + 1);
-      }
+      let dashIndex = remaining.indexOf('-') == -1 ? remaining.length : remaining.indexOf('-') + 1;
+      let spaceIndex = remaining.indexOf(' ') == -1 ? remaining.length : remaining.indexOf(' ');
+
+      let nextChunkIndex = Math.min(dashIndex, spaceIndex);
+
+      // Otherwise, the next word is everything up to the next space
+      let nextWord = remaining.substring(0, nextChunkIndex);
+      remaining = remaining.substring(nextChunkIndex);
 
       // Check if adding the next word to the current line would exceed the maximum length
-      if (line.length + nextWord.length + 1 > maxLength) {
-        // If it would exceed the maximum length, add the current line to the lines array and reset the current line
-        lines.push(line);
-        line = nextWord;
-      } else {
+      const maxLength = lines.length == 0 || lines.length == 3 ? 12 : 14;
+      if (line.length + nextWord.length <= maxLength) {
         // Otherwise, add the next word to the current line with a space
-        if (line.length != 0) line += " ";
         line += nextWord;
+      } else {
+        // If it would exceed the maximum length, add the current line to the lines array and reset the current line
+        lines.push(line.trimEnd());
+        line = nextWord;
+      }
+
+      if (line.length < maxLength && remaining[0] == ' ') {
+        line += ' ';
+        remaining = remaining.substring(1);
+      } else if (line.length == maxLength && remaining[0] == ' ') {
+        lines.push(line.trimEnd());
+        remaining = remaining.substring(1);
+        line = '';
+      }
+
+      // some dumb ol heuristic to try and even up 3 line puzzles a bit
+      if (remaining.length / line.length <= 2) { // don't let the second to last line be really short
+        if (lines.length == 1 && remaining.length <= 14) { // don't let the second or third line overflow
+          lines.push(line.trimEnd());
+          line = remaining;
+          remaining = '';
+        }
       }
     }
 
     // Add the final line to the lines array
-    lines.push(line);
+    if (line.length) lines.push(line);
+
+    // add padding lines so its always 4 rows
+    if (lines.length == 1) {
+      lines.unshift('');
+      lines.push('', '');
+    } else if (lines.length == 2) {
+      lines.unshift('');
+      lines.push('');
+    } else if (lines.length == 3) {
+      lines.push('');
+    }
 
     // Return the array of lines
     return lines;
@@ -109,25 +145,28 @@ export default {
 
   getEmojiBoard(puzzle: string, guessedLetters?: string[]): string {
     const letters = 'abcdefghijklmnopqrstuvwxyz';
-    const fullwidth = 'ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ';
-    let board = [];
+    let board: string[] = [];
 
-    const lines = this.wordWrap(puzzle, 12);
+    const lines = this.wordWrap(puzzle);
 
-    if (lines.length < 3) {
-      board.push('⬛🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩⬛');
-    }
+    const minPadding = Math.min(...lines.map((line, i) => Math.ceil((14 - line.length) / 2)))
+    const isCenterAligned = minPadding == 0 || lines.every(line => line.length % 2 == 0);
 
-    // FIXME: left align all lines if can't exactly center?
-    for (let line of lines) {
+    lines.forEach((line, i, lines) => {
       let boardLine = '';
-      const lineLength = board.length == 0 || board.length == 3 ? 12 : 14
+      const lineLength = i == 0 || i == 3 ? 12 : 14;
       let halfPad = (lineLength - line.length) / 2;
 
-      if (lineLength == 12) boardLine += '⬛';
-      boardLine += '🟩'.repeat(Math.floor(halfPad));
+      if (lineLength == 12) boardLine += '⬛️';
 
-      // dumb hack to detect discord and use regional indicators
+      const left = minPadding - (lineLength == 12 ? 1 : 0);
+      const leftActual = (isCenterAligned ? Math.floor(halfPad) : left);
+      if (leftActual < 0) {
+        console.log(':(');
+      }
+      boardLine += '🟩'.repeat(leftActual);
+
+      // dumb hack to detect discord and use discord emojis
       if (process.env.DISCORD_TOKEN) {
         for (let letter of line) {
           if (letter == ' ') boardLine += '🟩';
@@ -136,6 +175,7 @@ export default {
           else boardLine += '⬜';
         }
       } else {
+        const fullwidth = 'ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ';    
         for (let letter of line) {
           if (letter == ' ') boardLine += '🟩';
           else if (letters.includes(letter) == false) boardLine += letter; // - & ? ' . ! :
@@ -144,14 +184,17 @@ export default {
         }
       }
 
-      boardLine += '🟩'.repeat(Math.ceil(halfPad));
-      if (lineLength == 12) boardLine += '⬛';
+      const right = lineLength - (left + line.length);
+      const rightActual = isCenterAligned ? Math.ceil(halfPad) : right;
+      if (rightActual < 0) {
+        console.log(':(');
+      }
+      boardLine += '🟩'.repeat(rightActual);
+
+      if (lineLength == 12) boardLine += '⬛️';
 
       board.push(boardLine);
-    }
-
-    if (board.length == 2) board.push('🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩');
-    if (board.length == 3) board.push('⬛🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩⬛');
+    });
 
     return board.join('\n');
   }
