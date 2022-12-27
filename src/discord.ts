@@ -266,7 +266,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
         buttonStyle = ButtonStyle.Danger;
       } else {
         status = `💵 You spun **$${context.spinAmount}**.\n`;
-        buttonStatus = `💵 You spun $${context.spinAmount}.\n`;
+        buttonStatus = `💵 You spun $${context.spinAmount}.`;
         buttonStyle = ButtonStyle.Success;
       }
 
@@ -277,7 +277,7 @@ const stateHandlers: { [key: string]: StateHandler } = {
   guessConsonant: {
     onTransition: async (state, game) => {
       const context = game.service.getSnapshot().context;
-      let status = `:dollar: You spun **$${context.spinAmount}**.\n`;
+      let status = `💵 You spun **$${context.spinAmount}**.\n`;
       status += `⏳ ${context.currentPlayer.name}, select a consonant.`;
       game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.LettersSelect(game)));
     },
