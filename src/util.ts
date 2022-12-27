@@ -1,3 +1,5 @@
+import chalk from "chalk";
+
 const darkGray: { [key: string]: string } = {
   'a': '<:a_darkgray:929417504512684033>',
   'b': '<:b_darkgray:929417514855833630>',
@@ -74,13 +76,18 @@ export default {
     let lines: string[] = [];
 
     // see if we can easily split the sentence in half
-    for (let idx = Math.floor(sentence.length * 0.3); idx <= Math.ceil(sentence.length * 0.7); idx++) {
-      if (sentence[idx] != ' ') continue;
+    // start from the middle and fan out instead of going left to right
+    for (let offset = 0; offset <= sentence.length * 0.2; offset++)
+    {
+      const midpoint = Math.floor(sentence.length / 2);
+      const idx = sentence[midpoint - offset] == ' ' ? midpoint - offset : sentence[midpoint + offset] == ' ' ? midpoint + offset : null;
+      if (idx == null) continue;
 
       const split = [sentence.substring(0, idx), sentence.substring(idx + 1)];
       if (split.some(line => line.length > 14)) continue;
       lines = split;
       remaining = '';
+      break;
     }
 
     // Loop until there is no more text to process
@@ -116,8 +123,8 @@ export default {
       }
 
       // some dumb ol heuristic to try and even up 3 line puzzles a bit
-      if (remaining.length / line.length <= 2) { // don't let the second to last line be really short
-        if (lines.length == 1 && remaining.length <= 14) { // don't let the second or third line overflow
+      if (remaining.length / line.length <= 1.8) { // don't let the second line be really short
+        if (lines.length == 1 && remaining.length <= 14) { // don't let the third line overflow
           lines.push(line.trimEnd());
           line = remaining;
           remaining = '';
@@ -149,7 +156,10 @@ export default {
 
     const lines = this.wordWrap(puzzle);
 
-    const minPadding = Math.min(...lines.map((line, i) => Math.ceil((14 - line.length) / 2)))
+    const minPadding = Math.min(...lines.map(line => {
+      const amt = (14 - line.length) / 2;
+      return amt == 0.5 ? 1 : Math.floor(amt);
+    }));
     const isCenterAligned = minPadding == 0 || lines.every(line => line.length % 2 == 0);
 
     lines.forEach((line, i, lines) => {
@@ -178,8 +188,8 @@ export default {
         const fullwidth = 'ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ';    
         for (let letter of line) {
           if (letter == ' ') boardLine += '🟩';
-          else if (letters.includes(letter) == false) boardLine += letter; // - & ? ' . ! :
-          else if (!guessedLetters || guessedLetters.includes(letter)) boardLine += fullwidth[letters.indexOf(letter)];
+          else if (letters.includes(letter) == false) boardLine += chalk.bgWhiteBright.black(letter + ' '); // - & ? ' . ! :
+          else if (!guessedLetters || guessedLetters.includes(letter)) boardLine += chalk.bgWhiteBright.black(fullwidth[letters.indexOf(letter)]);
           else boardLine += '⬜';
         }
       }
