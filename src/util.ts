@@ -175,7 +175,7 @@ export default {
       let halfPad = (lineLength - line.length) / 2;
 
       // add the first/last line border
-      if (lineLength == 12) boardLine += '⬛️';
+      if (lineLength == 12) boardLine += process.env.DISCORD_TOKEN ? ':black_large_square:' : '⬛️';
 
       // figure out how many background tiles to render
       const left = minPadding - (lineLength == 12 ? 1 : 0);
@@ -212,7 +212,7 @@ export default {
       boardLine += '🟩'.repeat(rightActual);
 
       //if we're on the first/last line add the right border
-      if (lineLength == 12) boardLine += '⬛️';
+      if (lineLength == 12) boardLine += process.env.DISCORD_TOKEN ? ':black_large_square:' : '⬛️';
 
       board.push(boardLine);
     });

@@ -104,7 +104,7 @@ async function statsMessage(client: Client<boolean>, members: Collection<string,
       const user = await client.users.fetch(score[0]);
       boardStr += `${user}: ${score[1]}\n`;
     }
-    embed.addFields({ name: `Local ${boardName}`, value: boardStr.length ? boardStr : 'No local players', inline: true});
+    embed.addFields({ name: `Local ${boardName}`, value: boardStr.length ? boardStr : 'No players above threshold', inline: true});
   }
 
   for (const board of boards) {
@@ -114,7 +114,7 @@ async function statsMessage(client: Client<boolean>, members: Collection<string,
       const user = await client.users.fetch(score[0]);
       boardStr += `${user.tag}: ${score[1]}\n`;
     }
-    embed.addFields({ name: 'Global ' + board[0], value: boardStr.length ? boardStr : 'No global players', inline: true});
+    embed.addFields({ name: 'Global ' + board[0], value: boardStr.length ? boardStr : 'No players above threshold', inline: true});
   } 
 
   return embed;
