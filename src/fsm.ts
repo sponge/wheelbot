@@ -68,8 +68,8 @@ const startGame = {
     context.category = puzzles[random].category;
     context.puzzle = puzzles[random].puzzle.toLowerCase();
 
-    context.currentPlayerNum = 0;
-    context.currentPlayer = context.players[0];
+    context.currentPlayerNum = Math.floor(Math.random() * context.players.length);
+    context.currentPlayer = context.players[context.currentPlayerNum];
     context.spinAmount = 0;
     context.guessedLetters = [];
   },
