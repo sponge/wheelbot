@@ -1,5 +1,6 @@
 import { Client, Collection, EmbedBuilder, GuildMember } from 'discord.js';
 import { readFile, writeFile } from 'node:fs/promises'
+import { WheelGame } from './discord-types';
 import { WheelContext } from './fsm';
 
 interface WheelPlayerStats {
@@ -73,7 +74,7 @@ type BoardName = string;
 type Leaderboard = [string, string][];
 type LeaderboardList = [BoardName, Leaderboard];
 
-async function statsMessage(client: Client<boolean>, members: Collection<string, GuildMember>): Promise<EmbedBuilder> {
+async function statsMessage(games: Map<string, WheelGame>, client: Client<boolean>, members: Collection<string, GuildMember>): Promise<EmbedBuilder> {
   const earnings: Leaderboard = Object.entries(stats)
     .map(o => <[string, number]>[o[0], o[1].earnings])
     .sort((a, b) => b[1] - a[1])
@@ -91,9 +92,15 @@ async function statsMessage(client: Client<boolean>, members: Collection<string,
     .sort((a, b) => b[1] - a[1])
     .map(o => [o[0], o[1].toFixed(1) + '%']);
 
+  let totalRounds = Object.entries(stats).reduce((prev, player, i) => prev += player[1].roundsWon, 0);
+  let totalLetters = Object.entries(stats).reduce((prev, player, i) => prev += player[1].correctLetters + player[1].wrongLetters, 0);
+  let description = `${games.size} active games on ${client.guilds.cache.size} servers.\n`;
+  description += `Lifetime ${totalRounds} rounds played, ${totalLetters} letters guessed.`
+
   const embed = new EmbedBuilder()
     .setTitle("Hall of Fame")
-    .setColor(0x000d8b);
+    .setColor(0x000d8b)
+    .setDescription(description);
 
   const boards: LeaderboardList[] = [['Earnings', earnings], ['Letter Accuracy', accuracy], ['Win Percent', wins]];
 

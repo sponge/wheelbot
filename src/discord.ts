@@ -94,7 +94,8 @@ client.on(Events.InteractionCreate, async interaction => {
   } else if (interaction.isCommand() && interaction.commandName == 'wheelstats') {
     // FIXME: dumb typescript hack, why?
     const members = (interaction.channel as GuildChannel).members;
-    await interaction.reply({ embeds: [await Stats.statsMessage(client, members)] });
+    const embed = await Stats.statsMessage(games, client, members);
+    await interaction.reply({ embeds: [embed] });
 
     return;
 
