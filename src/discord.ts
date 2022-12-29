@@ -76,7 +76,7 @@ client.on(Events.InteractionCreate, async interaction => {
       }
     });
 
-    interaction.reply(Messages.JoinMessage(game));
+    await interaction.reply(Messages.JoinMessage(game));
     return;
 
     // handle ending the game
@@ -379,6 +379,13 @@ const stateHandlers: { [key: string]: StateHandler } = {
 
       game.currentMessage?.edit(Messages.PuzzleBoard(game, status, ButtonPresets.DisabledButton(ButtonStatus, ButtonStyle.Danger)));
     }
+  },
+
+  gameTimeout: {
+    onTransition(state, game) {
+      game.channel.send('Game cancelled due to idle timeout.');
+      stopGame(game.channel.id);
+    },
   },
 
   gameOver: {
